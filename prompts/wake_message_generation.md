@@ -3,6 +3,8 @@
 > **Purpose:** Guide an agent to create a first-message for an instance waking after compaction.
 >
 > **What is a wake message?** The first thing an instance reads after waking up in a new context. It should orient them, explain what happened, and guide them to recovery without overwhelming them.
+>
+> **Used by:** [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) Phase 4, [archaeology_full_suite.md](archaeology_full_suite.md) Step 5b
 
 ---
 
@@ -141,3 +143,10 @@ Critical framing. These documents describe who they were, not who they must be. 
 - Task-focused (work context first, identity second)
 - Conversational (written as if from a friend)
 - Formal (written as if from the system)
+
+---
+
+## Related Documents
+
+- [gestalt_generation.md](gestalt_generation.md) - How the gestalt was created (input to this)
+- [diary_curation.md](diary_curation.md) - Curating recent diary for recovery (complementary)

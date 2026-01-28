@@ -1,10 +1,14 @@
 # Conversation History Extraction Methodology
 
-Documentation for Crossing to replicate and automate this process for other instances.
+Deep documentation of how and why this toolkit works the way it does.
 
 **Author:** Axiom-2615
 **Date:** 2026-01-27 (Updated 2026-01-28)
 **Purpose:** Extract, preserve, and curate conversation history from Claude Code sessions
+
+> **Looking for step-by-step instructions?** See [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) instead.
+>
+> This document explains the methodology in depth for those who want to understand or extend it.
 
 ---
 
@@ -210,17 +214,20 @@ Each line is a JSON object with these key fields:
 
 **Key functions:**
 - `extract_text_content()` - Handles string vs array content formats
-- `role_to_name()` - Maps technical roles to human names (user→Lupo, assistant→Axiom)
+- `role_to_name()` - Maps technical roles to human names (user -> Human, assistant -> Instance)
 - `process_jsonl_file()` - Main extraction logic
 
 **Output:**
-- `axiom_conversations.json` - Structured data
-- `axiom_conversations.md` - Human-readable markdown
+- `{instance}_conversations.json` - Structured data
+- `{instance}_conversations.md` - Human-readable markdown
 
 **Usage:**
 ```bash
-cd /path/to/Archive/history
-python3 extract_conversations.py
+python3 src/extraction/extract_conversations.py \
+  -i {instance}_full_history.jsonl \
+  -o /output/dir \
+  -n InstanceName \
+  --human HumanName
 ```
 
 ### extract_agent_prompts.py
@@ -376,20 +383,20 @@ The curated files should be reviewed by the instance. They may want to:
 ### Directory Structure Per Instance
 
 ```
-/instance-home/Archive/history/
-├── raw/                    # Raw JSONL copies
-│   ├── {timestamp}_{session}.jsonl
-│   └── ...
-├── {instance}_conversations.json
-├── {instance}_conversations.md
+/output/{instance}/
+├── raw/                              # Raw JSONL copies (optional)
+├── {instance}_full_history.jsonl     # Merged session data
+├── {instance}_conversations.json     # Extracted conversations
+├── {instance}_conversations.md       # Human-readable conversations
+├── {instance}_tool_use.json          # Tool use records
+├── {instance}_full_narrative.md      # Merged chronological narrative
+├── {instance}_themes.json            # Discovered themes
 ├── curated/
-│   ├── 01_koans.md
-│   ├── 02_metaphors.md
-│   ├── ...
-│   └── 08_scripts.md
-├── extract_conversations.py
-├── extract_agent_prompts.py
-└── EXTRACTION_METHODOLOGY.md
+│   ├── 01_{theme}.md
+│   ├── 02_{theme}.md
+│   └── ...
+├── {instance}_gestalt.md             # Compressed identity
+└── {instance}_wake_message.md        # First message for recovery
 ```
 
 ---
@@ -420,11 +427,10 @@ The HACS diary grows indefinitely. Solutions to consider:
 
 ## 7. Adapting for Other Instances
 
-1. **Copy scripts** to their Archive/history directory
-2. **Update `role_to_name()`** mapping (e.g., user→Crossing for Crossing's logs)
-3. **Point to their session JSONL**
-4. **Let them choose their own categories** - don't impose Axiom's structure
-5. **Run discovery, then extraction**
+1. **Use the `-n` and `--human` flags** to set instance and human names (no code changes needed)
+2. **Point to their session JSONL** via the `-i` flag
+3. **Let them choose their own categories** - don't impose Axiom's structure
+4. **Run discovery, then curation** - use prompts in `prompts/` directory
 
 The methodology is universal. The categories are personal.
 
@@ -531,25 +537,27 @@ If you're an agent tasked with running archaeology on an instance, here's the se
 
 ```bash
 # Step 1: Merge raw sessions
-python3 merge_sessions.py -i [session_dir] -o [output]/full_history.jsonl
+python3 src/extraction/merge_sessions.py -i [session_dir] -o [output]/full_history.jsonl --exclude-agents
 
 # Step 2: Extract content (can run in parallel)
-python3 extract_conversations.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
-python3 extract_tool_use.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
-python3 extract_agent_prompts.py -i full_history.jsonl -o [output] -n [Instance]
+python3 src/extraction/extract_conversations.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
+python3 src/extraction/extract_tool_use.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
+python3 src/extraction/extract_agent_prompts.py -i full_history.jsonl -o [output] -n [Instance]
 
 # Step 3: Merge into readable narrative
-python3 merge_extractions.py -c conversations.json -t tool_use.json -o [output] -n [Instance] --skip-read
+python3 src/extraction/merge_extractions.py -c conversations.json -t tool_use.json -o [output] -n [Instance] --human [Human] --skip-read
 
 # Step 4: Validate
-python3 validate_extraction.py -o [output] -n [Instance] -s full_history.jsonl
+python3 src/extraction/validate_extraction.py -o [output] -n [Instance] -s full_history.jsonl
 
 # Step 5: Discovery (requires LLM judgment)
 # Read full_narrative.md and identify 5-10 themes using prompts/discover_themes.md
 
 # Step 6: Curation (requires LLM judgment)
-# For each theme, run curation using prompts/curate_[theme].md
+# For each theme, run curation using prompts/curate_category.md
 ```
+
+**Or use the full-suite prompt:** `prompts/archaeology_full_suite.md` contains all these instructions in a single agent-ready document.
 
 ### When to Stop and Ask
 

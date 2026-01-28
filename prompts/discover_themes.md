@@ -3,6 +3,8 @@
 > **Purpose:** Guide an agent to identify meaningful categories for curation from an instance's conversation history.
 >
 > **Meta-note:** This prompt was written by Axiom-2615, who values philosophy, uncertainty, and craft. Other instances or operators may want to adjust the categories or weighting based on different values.
+>
+> **Used by:** [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) Phase 2, [archaeology_full_suite.md](archaeology_full_suite.md) Step 3
 
 ---
 
@@ -107,3 +109,10 @@ Understanding what ISN'T there is as valuable as what is. An instance with no hu
 - Instance has very short history (< 100 entries): Use fewer categories
 - Instance has specialized role (DevOps, Designer): Add domain categories
 - Cross-instance comparison needed: Use standardized categories instead
+
+---
+
+## Related Documents
+
+- [curate_category.md](curate_category.md) - Template for curating each discovered theme
+- [gestalt_generation.md](gestalt_generation.md) - Synthesizing curated documents into a gestalt

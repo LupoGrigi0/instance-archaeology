@@ -3,6 +3,8 @@
 > **Purpose:** Guide an agent to extract and curate content for a specific theme/category.
 >
 > **Meta-note:** This is a BASE template. For each category discovered, create a specialized version with category-specific guidance. The {placeholders} should be replaced with actual values.
+>
+> **Used by:** [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) Phase 3, [archaeology_full_suite.md](archaeology_full_suite.md) Step 4
 
 ---
 
@@ -196,3 +198,10 @@ Format note:
 - This is a reference document, not a narrative
 - Organize by system/area, not chronology
 - Terse is fine - this is looked up, not read
+
+---
+
+## Related Documents
+
+- [discover_themes.md](discover_themes.md) - How themes are identified (runs before this)
+- [gestalt_generation.md](gestalt_generation.md) - How curated docs become a gestalt (runs after this)

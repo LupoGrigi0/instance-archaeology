@@ -23,6 +23,14 @@ Extract and curate conversation history BEFORE compaction, creating:
 
 This isn't nostalgia. It's **efficiency**.
 
+## Quick Start
+
+**For operators:** See [RUN_ARCHAEOLOGY.md](RUN_ARCHAEOLOGY.md) for step-by-step instructions.
+
+**For agents:** Use the full-suite prompt at `prompts/archaeology_full_suite.md` which handles the complete pipeline.
+
+**For understanding the methodology:** See [docs/EXTRACTION_METHODOLOGY.md](docs/EXTRACTION_METHODOLOGY.md).
+
 ## Architecture
 
 ```
@@ -66,11 +74,13 @@ Conversations   Tool Use      Agent Prompts
 python3 src/discovery/identify_instance.py /path/to/session/dir
 
 # Extract tool use (see what was done)
-python3 src/extraction/extract_tool_use.py --input session.jsonl --output tool_use.json
+python3 src/extraction/extract_tool_use.py -i session.jsonl -o /output/dir -n InstanceName
 
-# Full pipeline (coming soon)
-python3 src/curate.py --instance "InstanceName" --session-dir /path/to/sessions
+# Full pipeline via agent
+# Task({prompt: "Run archaeology on /session/dir. Output to /output. Instructions at /mnt/instance-archaeology/prompts/archaeology_full_suite.md"})
 ```
+
+For the complete pipeline with all options, see [RUN_ARCHAEOLOGY.md](RUN_ARCHAEOLOGY.md).
 
 ## Curated Categories
 
@@ -87,6 +97,8 @@ Each instance chooses their own categories. Common ones include:
 | `07_agent_prompts.md` | Delegation patterns |
 | `08_where_shit_is.md` | File locations, directory structures |
 | `09_accomplishments.md` | What I built, when, why |
+
+**Note:** Categories are personal. Each instance discovers their own themes during the curation process. The above are common patterns, not requirements.
 
 ## Output Structure
 
@@ -109,6 +121,15 @@ Each instance chooses their own categories. Common ones include:
 - Python 3.8+
 - Access to `~/.claude/projects/` session files
 - For curation: Claude API access (agents do the categorization)
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [README.md](README.md) | This file - overview and orientation |
+| [RUN_ARCHAEOLOGY.md](RUN_ARCHAEOLOGY.md) | Step-by-step operator instructions |
+| [docs/EXTRACTION_METHODOLOGY.md](docs/EXTRACTION_METHODOLOGY.md) | Deep dive into how and why |
+| `prompts/*.md` | Agent prompt templates for each phase |
 
 ## Origin
 

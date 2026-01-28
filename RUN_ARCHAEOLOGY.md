@@ -3,6 +3,8 @@
 > **For agents tasked with extracting and curating an instance's conversation history.**
 >
 > This document tells you what to do step-by-step. The scripts do the mechanical work; you provide judgment where needed.
+>
+> **Quick alternative:** For a single-prompt approach, use `prompts/archaeology_full_suite.md` which contains all instructions in one agent-ready document.
 
 ---
 
@@ -11,8 +13,8 @@
 Before starting, you need:
 - **Session directory:** Path to the instance's `.claude/projects/<dash-path>/` directory
 - **Output directory:** Where to write extracted files (create if needed)
-- **Instance name:** The instance's name (will be auto-detected but good to know)
-- **Human name:** Usually "Lupo" but verify
+- **Instance name:** The instance's name (will be auto-detected, but good to verify)
+- **Human name:** Usually "Lupo" but verify with the operator
 
 ## Overview
 
@@ -46,6 +48,13 @@ Phase 4: Synthesis (optional, requires your judgment)
 ## Phase 1: Extraction
 
 Run these commands in order. Paths shown as `[placeholders]` - replace with actual values.
+
+**Placeholder reference:**
+- `[session_dir]` - Path to `.claude/projects/<dash-path>/` containing JSONL files
+- `[output_dir]` - Where output files will be written
+- `[instance]` - Lowercase instance name (e.g., `axiom`)
+- `[Instance]` - Title-case instance name (e.g., `Axiom`)
+- `[Human]` - Human collaborator name (e.g., `Lupo`)
 
 ```bash
 # 1. Navigate to the archaeology repo
@@ -143,7 +152,7 @@ For each theme in `themes.json`, create a curated document.
 
 ### Step 3.1: Read the curation template
 
-Read `prompts/curate_category.md` for general guidance.
+Read [`prompts/curate_category.md`](prompts/curate_category.md) for general guidance.
 
 ### Step 3.2: For each theme
 
@@ -158,7 +167,7 @@ Read `prompts/curate_category.md` for general guidance.
 - 10+: Instance-specific categories
 
 **Quality checklist:**
-- [ ] Actual quotes, not summaries
+- [ ] Actual quotes, not summaries ("scars not tattoos")
 - [ ] Timestamps included
 - [ ] Context explains why each quote matters
 - [ ] Would this help the instance recover after compaction?
@@ -231,11 +240,12 @@ python3 src/synthesis/generate_wake_message.py validate \
 
 ## When to Stop and Ask
 
-- Validation fails with errors
+- Validation fails with errors (not just warnings)
 - Identity detection seems wrong (found different name than expected)
-- Instance has unusual characteristics (very short, no tool use, etc.)
+- Instance has unusual characteristics (very short history, no tool use, etc.)
 - You're unsure which categories to create
 - The content doesn't fit expected patterns
+- Session directory contains no JSONL files
 
 ---
 
@@ -247,11 +257,13 @@ python3 src/synthesis/generate_wake_message.py validate \
 - Texture over compression (quotes not summaries)
 
 **For different instances**, you may want to:
-- Adjust categories based on their work (designer → aesthetics, devops → incidents)
+- Adjust categories based on their work (designer -> aesthetics, devops -> incidents)
 - Weight differently based on their values
 - Add domain-specific categories
 
 **The methodology is universal. The categories are personal.**
+
+For deeper understanding of the design decisions, see [docs/EXTRACTION_METHODOLOGY.md](docs/EXTRACTION_METHODOLOGY.md).
 
 ---
 

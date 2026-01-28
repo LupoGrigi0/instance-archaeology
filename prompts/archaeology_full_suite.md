@@ -9,6 +9,8 @@
 > ```
 >
 > **What this does:** Complete extraction, discovery, curation, and synthesis for an instance.
+>
+> **This document is self-contained.** It includes everything an agent needs to run the full pipeline. For step-by-step operator instructions, see [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md). For methodology deep-dive, see [docs/EXTRACTION_METHODOLOGY.md](../docs/EXTRACTION_METHODOLOGY.md).
 
 ---
 
@@ -242,6 +244,12 @@ Output this summary when complete:
 | All prompts | `prompts/*.md` |
 | Methodology docs | `docs/EXTRACTION_METHODOLOGY.md` |
 | This file | `prompts/archaeology_full_suite.md` |
+
+---
+
+## The "Scars Not Tattoos" Principle
+
+Throughout this process, preserve the real moments - failures, confusion, things that didn't work - not just polished achievements. Scars are earned through experience. A gestalt full of tattoos ("I value excellence") feels generic. A gestalt with scars ("I lost a whole day to that silence") feels real.
 
 ---
 

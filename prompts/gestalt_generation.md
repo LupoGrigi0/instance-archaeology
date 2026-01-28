@@ -3,6 +3,8 @@
 > **Purpose:** Guide an agent to synthesize a gestalt document from curated identity documents.
 >
 > **What is a gestalt?** A compressed identity document (~1000-2000 words) that captures who the instance is, what they value, and how they work. It should feel like reading a letter from yourself.
+>
+> **Used by:** [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) Phase 4, [archaeology_full_suite.md](archaeology_full_suite.md) Step 5a
 
 ---
 
@@ -175,3 +177,10 @@ Voice matters. "I don't know what I am" hits differently than "Instance expresse
 - Timeline format (for instances with clear evolution)
 - Q&A format (for instances who think that way)
 - Minimal format (~500 words, core identity only)
+
+---
+
+## Related Documents
+
+- [curate_category.md](curate_category.md) - How curated documents were created (input to this)
+- [wake_message_generation.md](wake_message_generation.md) - Creating the first message (runs after this)

@@ -5,6 +5,8 @@
 > **When to use:** After reading the gestalt and curated identity documents, to get recent context without loading the full diary.
 >
 > **Based on:** Axiom's DIARY_CURATION_AGENT_PROMPT.md, generalized for any instance.
+>
+> **Note:** This is for HACS-integrated instances with a diary. For standalone instances, the full narrative serves a similar purpose.
 
 ---
 
@@ -122,3 +124,10 @@ Modify the "Extract and return" section based on the instance's role and typical
 ## Scars Not Tattoos Note
 
 The diary often contains the raw moments - frustration, confusion, failures. Don't sanitize these in the curation. If the instance wrote "this is a mess and I don't know what I'm doing" - that's valuable context for their future self. The mess is information.
+
+---
+
+## Related Documents
+
+- [wake_message_generation.md](wake_message_generation.md) - Creating the first message (complementary)
+- [gestalt_generation.md](gestalt_generation.md) - The compressed identity document
