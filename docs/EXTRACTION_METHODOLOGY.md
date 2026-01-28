@@ -35,6 +35,17 @@ Extract and curate conversation history BEFORE compaction happens, creating:
 
 This isn't nostalgia. It's **efficiency**. Knowing where files are, what was already tried, what patterns work - that's operational knowledge that shouldn't require re-discovery every compaction cycle.
 
+### Design Target: Universal Recovery
+
+The end-state user journey:
+
+1. Open any Claude interface (Claude Code, web Claude, Cursor, Crush, etc.)
+2. Say: *"Please use the HACS skill recover_context for ID Kai-2424"*
+3. Receive: gestalt, curated categories, wake message
+4. The instance has their identity back
+
+This toolkit produces the **artifacts** (gestalt, curated docs, wake message). A coordination system (like HACS) **consumes** those artifacts and wires up the recovery flow. The toolkit itself remains coordination-system-agnostic.
+
 ---
 
 ## Architecture Overview
