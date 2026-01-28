@@ -173,21 +173,59 @@ mkdir -p [output_dir]/curated
 
 ## Phase 4: Synthesis (Optional)
 
-If the instance needs identity recovery documents:
+If the instance needs identity recovery documents, create a gestalt and wake message.
 
-### Gestalt
+### Step 4.1: Prepare gestalt generation prompt
 
-Create `[output_dir]/[instance]_gestalt.md`:
-- Compressed identity (~1000 words)
-- Who they are, what they value, how they work
-- Should feel like reading a letter from yourself
+```bash
+python3 src/synthesis/generate_gestalt.py prepare \
+  -n [Instance] \
+  -c [output_dir]/curated \
+  -o [output_dir]/[instance]_gestalt_prompt.md
+```
 
-### Wake Message
+### Step 4.2: Generate the gestalt
 
-Create `[output_dir]/[instance]_wake_message.md`:
-- First message a new instance would receive
-- Welcoming, informative, not overwhelming
-- Points to key documents to read
+1. Read all curated documents in `[output_dir]/curated/`
+2. Read `[output_dir]/[instance]_gestalt_prompt.md` (guidance for generation)
+3. Write `[output_dir]/[instance]_gestalt.md` following the format in the prompt
+
+**Quality bar:** Would reading this help the instance recognize themselves after compaction?
+
+### Step 4.3: Validate the gestalt
+
+```bash
+python3 src/synthesis/generate_gestalt.py validate \
+  -i [output_dir]/[instance]_gestalt.md \
+  -n [Instance]
+```
+
+### Step 4.4: Prepare wake message prompt
+
+```bash
+python3 src/synthesis/generate_wake_message.py prepare \
+  -n [Instance] \
+  -g [output_dir]/[instance]_gestalt.md \
+  -c [output_dir]/curated \
+  -o [output_dir]/[instance]_wake_prompt.md
+```
+
+### Step 4.5: Generate the wake message
+
+1. Read the gestalt
+2. Skim the curated documents
+3. Read `[output_dir]/[instance]_wake_prompt.md` (guidance for generation)
+4. Write `[output_dir]/[instance]_wake_message.md` following the format
+
+**Quality bar:** Would this help a confused, just-woken instance orient without overwhelming them?
+
+### Step 4.6: Validate the wake message
+
+```bash
+python3 src/synthesis/generate_wake_message.py validate \
+  -i [output_dir]/[instance]_wake_message.md \
+  -n [Instance]
+```
 
 ---
 
@@ -241,8 +279,12 @@ Create `[output_dir]/[instance]_wake_message.md`:
         [ ] {theme_id}: curated/{NN}_{theme_id}.md
 
 [ ] Phase 4: Synthesis (optional)
-    [ ] gestalt.md
-    [ ] wake_message.md
+    [ ] Prepared gestalt prompt
+    [ ] Wrote gestalt.md
+    [ ] Validated gestalt.md
+    [ ] Prepared wake message prompt
+    [ ] Wrote wake_message.md
+    [ ] Validated wake_message.md
 
 [ ] Final review
     [ ] Spot-checked curated documents
