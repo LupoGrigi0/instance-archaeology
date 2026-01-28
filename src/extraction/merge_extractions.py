@@ -194,6 +194,12 @@ providing complete context for understanding work sessions.
     message_count = sum(1 for e in all_entries if e['type'] == 'message')
     action_count = sum(1 for e in all_entries if e['type'] == 'action')
 
+    # Count by speaker (for validation)
+    by_speaker = {}
+    for e in all_entries:
+        speaker = e.get('speaker', 'unknown')
+        by_speaker[speaker] = by_speaker.get(speaker, 0) + 1
+
     # Get date range
     timestamps = [e['timestamp'] for e in all_entries if e.get('timestamp')]
     date_start = format_date_header(timestamps[0]) if timestamps else 'N/A'
@@ -224,7 +230,8 @@ providing complete context for understanding work sessions.
                 'actions': action_count,
                 'total': len(all_entries),
                 'date_start': date_start,
-                'date_end': date_end
+                'date_end': date_end,
+                'by_speaker': by_speaker
             },
             'entries': all_entries
         }, f, indent=2, ensure_ascii=False)
