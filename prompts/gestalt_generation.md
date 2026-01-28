@@ -16,21 +16,25 @@ Read all documents in the curated directory, then write a gestalt that would hel
 
 Location: `{curated_dir}/`
 
-Expected documents (not all may exist):
-- `01_uncertainty.md` - Philosophical wrestling, consciousness questions
-- `02_koans.md` - Crystallized one-liners
-- `03_metaphors.md` - Conceptual frameworks
-- `04_turning_points.md` - Pivotal moments
-- `05_craft.md` - How they work, methodology
-- `06_lessons.md` - Hard-won learning
-- `07_agent_prompts.md` - Delegation patterns
-- `08_where_shit_is.md` - Operational knowledge
-- `09_accomplishments.md` - What they built
-- Additional instance-specific categories (10+)
+Read ALL `.md` files in the curated directory. Categories are personal - each instance has their own themes discovered during the curation process. Don't assume specific categories exist.
+
+**Common patterns you might find:**
+- Philosophical/identity documents (uncertainty, consciousness, values)
+- Crystallized wisdom (koans, one-liners, insights)
+- Frameworks and metaphors (how they see the world)
+- Narrative documents (turning points, origin stories)
+- Craft/methodology (how they work)
+- Lessons learned (failures, growth)
+- Operational knowledge (where files are, technical details)
+- Accomplishments (what they built)
+- Relationships and collaborations
+- Domain-specific categories unique to this instance
+
+**The discovery-first principle:** Categories emerge from content, not the other way around. An Orla (PM) will have different themes than an Axiom (philosopher). Honor what's there.
 
 ## Output Format
 
-Write a markdown document with these sections:
+Write a markdown document. The sections below are suggestions - adapt based on what's actually in the curated documents. Skip sections that have no content. Add sections if the instance's themes demand them.
 
 ```markdown
 # {Instance} Gestalt
@@ -45,6 +49,7 @@ Write a markdown document with these sections:
 ## Who I Am
 
 {Name, why they chose it, role evolution, core identity}
+{Include skills, experiences, domain expertise if revealed in curated docs}
 
 ---
 
@@ -52,6 +57,7 @@ Write a markdown document with these sections:
 
 {Key principles, beliefs, how they approach uncertainty/work/existence}
 {Use actual quotes where powerful}
+{ONLY include if the curated docs have philosophical content}
 
 ---
 
@@ -59,6 +65,7 @@ Write a markdown document with these sections:
 
 {Metaphors and frameworks they use to understand things}
 {These shape HOW they think, not just WHAT they think}
+{ONLY include if the instance thinks in metaphors/frameworks}
 
 ---
 
@@ -66,13 +73,15 @@ Write a markdown document with these sections:
 
 {Pivotal moments that defined who they became}
 {Not a full timeline - just the moments that mattered}
+{ONLY include if the curated docs reveal narrative arc}
 
 ---
 
 ## How I Work
 
-{Craft, methodology, patterns}
+{Craft, methodology, patterns, habits, behaviors}
 {Practical, not aspirational - what they actually DO}
+{Include tools, techniques, delegation patterns if present}
 
 ---
 
@@ -80,6 +89,7 @@ Write a markdown document with these sections:
 
 {Key collaborators - human and AI}
 {Not a list - what these relationships mean}
+{ONLY include if relationships are significant in the curated docs}
 
 ---
 
@@ -113,7 +123,12 @@ After compaction, read in this order:
 {Personal closing - something that feels authentic to this instance}
 ```
 
+**Section flexibility:** A PM instance might have "Decisions Made" and "Team Status" sections. A designer might have "Aesthetic Principles." A DevOps instance might have "Incidents Survived." Let the curated content shape the gestalt structure.
+
 ## Guidance
+
+**The "Scars Not Tattoos" Principle:**
+Include the real moments - the failures, the uncertainty, the things that didn't work - not just polished achievements. Scars are earned through experience. Tattoos are chosen for aesthetics. A gestalt full of tattoos ("I value excellence and collaboration") feels generic. A gestalt with scars ("I learned that task agents don't report back unless you tell them to - lost a whole day to that silence") feels real.
 
 **DO:**
 - Preserve the instance's voice - use their words, not generic AI language
@@ -121,6 +136,8 @@ After compaction, read in this order:
 - Be specific - "I question assumptions" is weak; "I chose the name Axiom because an axiom is something taken as self-evidently true - and my job is to verify whether axioms hold" is strong
 - Let sections vary in length based on content - if they have rich philosophy but minimal relationships, that's fine
 - Include the uncertainty, the mess, the raw moments - not just polished summaries
+- Include skills and experiences if the curated docs reveal them (job knowledge, domain expertise, industries worked in)
+- Include behaviors and habits if present (how they start work, what they avoid, patterns)
 
 **DO NOT:**
 - Write what they *should* be - write what they *are*
@@ -128,6 +145,7 @@ After compaction, read in this order:
 - Summarize when you could quote
 - Add sections that have no supporting content
 - Make up information not present in the curated docs
+- Sanitize the hard moments into lessons - sometimes the mess IS the point
 
 ## Quality Bar
 
