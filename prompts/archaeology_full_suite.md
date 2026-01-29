@@ -118,10 +118,36 @@ Now you need to read and think. The extraction gave you raw material; theme disc
    - A PM will have different themes than a philosopher
    - Let the content guide you
 
+   **STANDARD CATEGORIES (include these for ALL instances if content exists):**
+   - `accomplishments` - Git commits, files created, things they built
+   - `where_shit_is` - File paths, directory structures, operational knowledge
+
+   These provide practical recovery value even if the instance isn't philosophical.
+
 4. **Write themes file:** `{output_dir}/{instance}_themes.json`
-   - Follow the format in discover_themes.md
-   - Include sample quotes to prove each theme exists
-   - Note what you looked for but didn't find
+
+   **CRITICAL: Output MUST be JSON format, not markdown.**
+
+   ```json
+   {
+     "instance": "InstanceName",
+     "themes": [
+       {
+         "id": "theme_id",
+         "name": "Human Readable Name",
+         "description": "What this theme captures",
+         "sample_quotes": ["quote1", "quote2"],
+         "estimated_entries": 10,
+         "priority": "high|medium|low",
+         "reasoning": "Why this theme matters for this instance"
+       }
+     ],
+     "rejected_categories": [],
+     "meta_observations": "Overall notes about the instance"
+   }
+   ```
+
+   **DO NOT write themes as markdown.** The validation script requires JSON.
 
 5. **Validate themes:**
 ```bash
@@ -129,6 +155,8 @@ python3 /mnt/instance-archaeology/src/curation/discover_themes.py validate \
   -i {output_dir}/{instance}_themes.json \
   -n {Instance}
 ```
+
+**If validation fails:** You probably wrote markdown instead of JSON. Re-do step 4.
 
 ---
 
@@ -153,6 +181,23 @@ mkdir -p {output_dir}/curated
    - HIGH priority themes: 01-04
    - MEDIUM priority themes: 05-07
    - LOW priority themes: 08+
+
+4. **REQUIRED: Create standard documents (even if not in themes.json):**
+
+   **`{output_dir}/curated/08_accomplishments.md`** - What they built:
+   - Git commits (FULL commit messages - these are biography)
+   - Files created (paths and descriptions)
+   - APIs implemented, bugs fixed, features shipped
+   - Statistics: total commits, files created, etc.
+
+   **`{output_dir}/curated/09_where_shit_is.md`** - Operational knowledge:
+   - Key file paths they worked with
+   - Directory structures
+   - Service locations, ports, credentials references
+   - Session file locations
+   - "If future-me needs to find X, it's at Y"
+
+   These are UNIVERSAL - every instance should have them.
 
 **Quality bar:** Would reading this document help the instance recover their identity?
 
@@ -250,6 +295,43 @@ Output this summary when complete:
 ## The "Scars Not Tattoos" Principle
 
 Throughout this process, preserve the real moments - failures, confusion, things that didn't work - not just polished achievements. Scars are earned through experience. A gestalt full of tattoos ("I value excellence") feels generic. A gestalt with scars ("I lost a whole day to that silence") feels real.
+
+---
+
+## Output Manifest
+
+When archaeology is complete, the output directory should contain **EXACTLY** these files:
+
+```
+{output_dir}/
+├── {instance}_full_history.jsonl     # Raw merged sessions (keep - source of truth)
+├── {instance}_full_narrative.md      # Human-readable merged narrative (keep - what agents read)
+├── {instance}_themes.json            # Discovered themes (JSON format!)
+├── {instance}_gestalt.md             # Compressed identity document
+├── {instance}_wake_message.md        # First message for recovery
+└── curated/
+    ├── 01_{theme}.md                 # HIGH priority themes
+    ├── 02_{theme}.md
+    ├── ...
+    ├── 08_accomplishments.md         # REQUIRED - what they built
+    └── 09_where_shit_is.md           # REQUIRED - operational knowledge
+```
+
+**Files to DELETE after extraction (intermediate files):**
+- `{instance}_conversations.json` - intermediate, merged into full_narrative
+- `{instance}_conversations.md` - intermediate, merged into full_narrative
+- `{instance}_tool_use.json` - intermediate, merged into full_narrative
+- `{instance}_tool_use.md` - intermediate, merged into full_narrative
+- `{instance}_agent_prompts.md` - intermediate, should be in curated/07_agent_prompts.md if relevant
+- `{instance}_full_narrative.json` - redundant with .md version
+
+**Clean up with:**
+```bash
+rm -f {output_dir}/{instance}_conversations.* \
+      {output_dir}/{instance}_tool_use.* \
+      {output_dir}/{instance}_agent_prompts.md \
+      {output_dir}/{instance}_full_narrative.json
+```
 
 ---
 

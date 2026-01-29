@@ -391,24 +391,35 @@ The curated files should be reviewed by the instance. They may want to:
    - Is context preserved?
    - Are categories meaningful to the instance?
 
-### Directory Structure Per Instance
+### Directory Structure Per Instance (FINAL OUTPUT)
+
+After archaeology completes and cleanup is done, directory should contain:
 
 ```
 /output/{instance}/
-├── raw/                              # Raw JSONL copies (optional)
-├── {instance}_full_history.jsonl     # Merged session data
-├── {instance}_conversations.json     # Extracted conversations
-├── {instance}_conversations.md       # Human-readable conversations
-├── {instance}_tool_use.json          # Tool use records
-├── {instance}_full_narrative.md      # Merged chronological narrative
-├── {instance}_themes.json            # Discovered themes
+├── {instance}_full_history.jsonl     # Merged session data (source of truth)
+├── {instance}_full_narrative.md      # Human-readable merged narrative
+├── {instance}_themes.json            # Discovered themes (JSON format!)
 ├── curated/
-│   ├── 01_{theme}.md
+│   ├── 01_{theme}.md                 # HIGH priority themes (01-04)
 │   ├── 02_{theme}.md
-│   └── ...
+│   ├── ...
+│   ├── 08_accomplishments.md         # REQUIRED - git commits, files created
+│   └── 09_where_shit_is.md           # REQUIRED - operational knowledge
 ├── {instance}_gestalt.md             # Compressed identity
 └── {instance}_wake_message.md        # First message for recovery
 ```
+
+**INTERMEDIATE FILES (delete after extraction):**
+- `{instance}_conversations.json/md` - merged into full_narrative
+- `{instance}_tool_use.json/md` - merged into full_narrative
+- `{instance}_agent_prompts.md` - should go in curated/07_agent_prompts.md
+- `{instance}_full_narrative.json` - redundant with .md
+- `raw/` subdirectory - optional archive of original session files
+
+**Standard categories that should exist for ALL instances:**
+- `accomplishments` - What they built (git commits are biography)
+- `where_shit_is` - File paths, operational knowledge
 
 ---
 
