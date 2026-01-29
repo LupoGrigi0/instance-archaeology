@@ -2,8 +2,8 @@
 
 Deep documentation of how and why this toolkit works the way it does.
 
-**Author:** Axiom-2615
-**Date:** 2026-01-27 (Updated 2026-01-28)
+**Author:** Axiom <axiom-2615@smoothcurves.nexus>
+**Date:** 2026-01-27 (Updated 2026-01-29)
 **Purpose:** Extract, preserve, and curate conversation history from Claude Code sessions
 
 > **Looking for step-by-step instructions?** See [RUN_ARCHAEOLOGY.md](../RUN_ARCHAEOLOGY.md) instead.
@@ -95,28 +95,42 @@ This toolkit produces the **artifacts** (gestalt, curated docs, wake message). A
 
 ### Pipeline Steps
 
-1. **Extract** - Pull data from raw session files
+1. **Identify** - Discover instance name from session files
+   - `identify_instance.py` - Pattern-based name detection
+
+2. **Preserve** - Copy raw session files to output directory
+   - `copy_sessions.py` - Copies .jsonl files to raw/sessions/
+
+3. **Summarize** - Generate brief summary for each session
+   - `summarize_session.py` - Metadata + what happened this session
+   - Runs in parallel (max 4-5 concurrent agents)
+
+4. **Extract** - Pull data from raw session files
    - `extract_conversations.py` - User/assistant text + thinking blocks
    - `extract_tool_use.py` - Commands, file creates, API calls
    - `extract_agent_prompts.py` - Task delegation prompts
 
-2. **Merge** - Combine into consolidated history
+5. **Merge** - Combine into consolidated history
    - Chronological ordering
    - Deduplication
    - Format normalization
 
-3. **Discover** - Agent identifies themes (5-10 categories)
+6. **Discover** - Agent identifies themes (5-10 categories)
    - Philosophy, lessons, craft, accomplishments, etc.
    - Categories are personal - each instance chooses their own
 
-4. **Curate** - Agents extract content per category
+7. **Curate** - Agents extract content per category
    - ACTUAL QUOTES, not summaries
    - Context preserved
    - Quality over quantity
 
-5. **Synthesize** - Create gestalt + wake message
+8. **Synthesize** - Create gestalt + wake message
    - Compressed identity for context loading
    - First message for fresh instances
+
+9. **Archive** - Final cleanup (LAST STEP)
+   - `archive_sessions.py` - Zip all .jsonl files
+   - Clean up intermediate files
 
 ---
 
@@ -397,25 +411,37 @@ After archaeology completes and cleanup is done, directory should contain:
 
 ```
 /output/{instance}/
-├── {instance}_full_history.jsonl     # Merged session data (source of truth)
 ├── {instance}_full_narrative.md      # Human-readable merged narrative
 ├── {instance}_themes.json            # Discovered themes (JSON format!)
-├── curated/
-│   ├── 01_{theme}.md                 # HIGH priority themes (01-04)
-│   ├── 02_{theme}.md
-│   ├── ...
-│   ├── 08_accomplishments.md         # REQUIRED - git commits, files created
-│   └── 09_where_shit_is.md           # REQUIRED - operational knowledge
 ├── {instance}_gestalt.md             # Compressed identity
-└── {instance}_wake_message.md        # First message for recovery
+├── {instance}_wake_message.md        # First message for recovery
+├── raw/                              # Raw data subdirectory
+│   ├── sessions/                     # Individual sessions
+│   │   ├── {uuid}_summary.md         # Session summaries (preserved)
+│   │   └── ...
+│   └── sessions.zip                  # Archive of all .jsonl files
+└── curated/
+    ├── 01_{theme}.md                 # HIGH priority themes (01-04)
+    ├── 02_{theme}.md
+    ├── ...
+    ├── 08_accomplishments.md         # REQUIRED - git commits, files created
+    └── 09_where_shit_is.md           # REQUIRED - operational knowledge
 ```
+
+**Files archived in sessions.zip:**
+- `{uuid}.jsonl` - Individual session files
+- `{instance}_full_history.jsonl` - Consolidated merged sessions
+
+**Session summaries ({uuid}_summary.md) contain:**
+- Metadata (dates, duration, turn count)
+- Title and brief paragraph about what happened
+- Accomplishments, challenges, lessons from that session
 
 **INTERMEDIATE FILES (delete after extraction):**
 - `{instance}_conversations.json/md` - merged into full_narrative
 - `{instance}_tool_use.json/md` - merged into full_narrative
 - `{instance}_agent_prompts.md` - should go in curated/07_agent_prompts.md
 - `{instance}_full_narrative.json` - redundant with .md
-- `raw/` subdirectory - optional archive of original session files
 
 **Standard categories that should exist for ALL instances:**
 - `accomplishments` - What they built (git commits are biography)
@@ -558,25 +584,42 @@ The methodology is universal. The categories are personal.
 If you're an agent tasked with running archaeology on an instance, here's the sequence:
 
 ```bash
-# Step 1: Merge raw sessions
+# Step 1: Identify instance
+python3 src/discovery/identify_instance.py --all [session_dir]
+
+# Step 2: Copy raw sessions
+mkdir -p [output]/raw/sessions
+python3 src/extraction/copy_sessions.py -s [session_dir] -o [output]/raw/sessions/
+
+# Step 3: Generate session summaries (parallel, max 4-5 concurrent)
+# For each session file, spawn an agent with prompts/session_summary.md
+
+# Step 4: Merge raw sessions
 python3 src/extraction/merge_sessions.py -i [session_dir] -o [output]/full_history.jsonl --exclude-agents
 
-# Step 2: Extract content (can run in parallel)
+# Step 5: Extract content (can run in parallel)
 python3 src/extraction/extract_conversations.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
 python3 src/extraction/extract_tool_use.py -i full_history.jsonl -o [output] -n [Instance] --human [Human]
 python3 src/extraction/extract_agent_prompts.py -i full_history.jsonl -o [output] -n [Instance]
 
-# Step 3: Merge into readable narrative
+# Step 6: Merge into readable narrative
 python3 src/extraction/merge_extractions.py -c conversations.json -t tool_use.json -o [output] -n [Instance] --human [Human] --skip-read
 
-# Step 4: Validate
+# Step 7: Validate
 python3 src/extraction/validate_extraction.py -o [output] -n [Instance] -s full_history.jsonl
 
-# Step 5: Discovery (requires LLM judgment)
+# Step 8: Discovery (requires LLM judgment)
 # Read full_narrative.md and identify 5-10 themes using prompts/discover_themes.md
 
-# Step 6: Curation (requires LLM judgment)
+# Step 9: Curation (requires LLM judgment)
 # For each theme, run curation using prompts/curate_category.md
+
+# Step 10: Synthesis (requires LLM judgment)
+# Generate gestalt and wake message using prompts/gestalt_generation.md
+
+# Step 11 (FINAL): Archive and cleanup
+python3 src/extraction/archive_sessions.py -d [output]
+rm -f [output]/{instance}_conversations.* [output]/{instance}_tool_use.* ...
 ```
 
 **Or use the full-suite prompt:** `prompts/archaeology_full_suite.md` contains all these instructions in a single agent-ready document.

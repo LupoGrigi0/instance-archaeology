@@ -83,7 +83,95 @@ This shows chronological identity declarations. If transitions are detected, use
 
 ---
 
-## Step 2: Run Extraction Scripts
+## Step 2: Copy Raw Sessions
+
+**NEW: Preserve the original session files before processing.**
+
+```bash
+# Create raw/sessions directory
+mkdir -p {output_dir}/raw/sessions
+
+# Copy all session files
+python3 /mnt/instance-archaeology/src/extraction/copy_sessions.py \
+  -s "{session_dir}" \
+  -o {output_dir}/raw/sessions/
+```
+
+This copies all main session `.jsonl` files to the output directory. These will be:
+- Used for session summaries (Step 3)
+- Archived at the end (Step 9)
+
+---
+
+## Step 3: Generate Session Summaries (Parallel)
+
+**NEW: Create a brief summary for each session file.**
+
+For instances with many sessions (like long-running instances), this step uses parallel agents.
+
+### For Each Session File:
+
+1. **Prepare the summary prompt:**
+```bash
+python3 /mnt/instance-archaeology/src/extraction/summarize_session.py prepare \
+  -i {output_dir}/raw/sessions/{session_uuid}.jsonl \
+  -n {Instance} \
+  -o {output_dir}/raw/sessions/{session_uuid}_prompt.md
+```
+
+2. **Spawn an agent to generate the summary:**
+```
+Task({
+  prompt: "Read the session file and prompt, generate summary. Session: {output_dir}/raw/sessions/{session_uuid}.jsonl, Prompt: {output_dir}/raw/sessions/{session_uuid}_prompt.md, Output: {output_dir}/raw/sessions/{session_uuid}_summary.md",
+  subagent_type: "general-purpose",
+  model: "haiku"
+})
+```
+
+3. **Clean up prompt file after summary is written:**
+```bash
+rm -f {output_dir}/raw/sessions/{session_uuid}_prompt.md
+```
+
+### Concurrency Control
+
+**IMPORTANT: Limit to 4-5 concurrent summary agents.**
+
+For instances with many sessions (10+):
+- Process sessions in batches of 4-5
+- Wait for batch to complete before starting next batch
+- This prevents overwhelming the system
+
+**Example batch processing:**
+```python
+# Pseudocode for batch processing
+session_files = list_sessions()
+batch_size = 4
+
+for i in range(0, len(session_files), batch_size):
+    batch = session_files[i:i+batch_size]
+    # Spawn agents for this batch (in parallel)
+    for session in batch:
+        spawn_summary_agent(session)
+    # Wait for batch to complete
+    wait_for_completion()
+```
+
+### Session Summary Contents
+
+Each summary should contain:
+- **Metadata:** Start date, end date, duration, turn count
+- **Title:** Memorable 3-7 word title
+- **Summary paragraph:** What happened in 2-4 sentences
+- **Accomplishments:** What was built, committed, shipped
+- **Challenges:** Problems and how they were solved
+- **Lessons:** Hard-won insights
+
+See `/mnt/instance-archaeology/prompts/session_summary.md` for full guidance.
+
+---
+
+## Step 4: Run Extraction Scripts
 
 Run these commands in order using Bash. Replace `{instance}` with the lowercase version of the discovered name.
 
@@ -91,33 +179,33 @@ Run these commands in order using Bash. Replace `{instance}` with the lowercase 
 # Create output directory
 mkdir -p {output_dir}
 
-# 2a. Merge raw sessions
+# 4a. Merge raw sessions
 python3 /mnt/instance-archaeology/src/extraction/merge_sessions.py \
   -i "{session_dir}" \
   -o {output_dir}/{instance}_full_history.jsonl \
   --exclude-agents
 
-# 2b. Extract conversations
+# 4b. Extract conversations
 python3 /mnt/instance-archaeology/src/extraction/extract_conversations.py \
   -i {output_dir}/{instance}_full_history.jsonl \
   -o {output_dir} \
   -n {Instance} \
   --human {human}
 
-# 2c. Extract tool use
+# 4c. Extract tool use
 python3 /mnt/instance-archaeology/src/extraction/extract_tool_use.py \
   -i {output_dir}/{instance}_full_history.jsonl \
   -o {output_dir} \
   -n {Instance} \
   --human {human}
 
-# 2d. Extract agent prompts
+# 4d. Extract agent prompts
 python3 /mnt/instance-archaeology/src/extraction/extract_agent_prompts.py \
   -i {output_dir}/{instance}_full_history.jsonl \
   -o {output_dir} \
   -n {Instance}
 
-# 2e. Merge into readable narrative
+# 4e. Merge into readable narrative
 python3 /mnt/instance-archaeology/src/extraction/merge_extractions.py \
   -c {output_dir}/{instance}_conversations.json \
   -t {output_dir}/{instance}_tool_use.json \
@@ -126,7 +214,7 @@ python3 /mnt/instance-archaeology/src/extraction/merge_extractions.py \
   --human {human} \
   --skip-read
 
-# 2f. Validate extraction
+# 4f. Validate extraction
 python3 /mnt/instance-archaeology/src/extraction/validate_extraction.py \
   -o {output_dir} \
   -n {instance} \
@@ -138,7 +226,7 @@ python3 /mnt/instance-archaeology/src/extraction/validate_extraction.py \
 
 ---
 
-## Step 3: Theme Discovery (Requires Judgment)
+## Step 5: Theme Discovery (Requires Judgment)
 
 Now you need to read and think. The extraction gave you raw material; theme discovery requires understanding.
 
@@ -195,7 +283,7 @@ python3 /mnt/instance-archaeology/src/curation/discover_themes.py validate \
 
 ---
 
-## Step 4: Curation (Requires Judgment)
+## Step 6: Curation (Requires Judgment)
 
 For each discovered theme, create a curated document.
 
@@ -240,9 +328,9 @@ mkdir -p {output_dir}/curated
 
 ---
 
-## Step 5: Synthesis (Requires Judgment)
+## Step 7: Synthesis (Requires Judgment)
 
-### 5a. Generate Gestalt
+### 7a. Generate Gestalt
 
 1. **Read all curated documents** in `{output_dir}/curated/`
 2. **Read gestalt guidance:** `/mnt/instance-archaeology/prompts/gestalt_generation.md`
@@ -253,7 +341,7 @@ mkdir -p {output_dir}/curated
 - Philosopher gets philosophy sections (uncertainty, koans)
 - Let the curated content shape the structure
 
-### 5b. Generate Wake Message
+### 7b. Generate Wake Message
 
 1. **Read the gestalt** you just wrote
 2. **Read wake message guidance:** `/mnt/instance-archaeology/prompts/wake_message_generation.md`
@@ -265,7 +353,7 @@ mkdir -p {output_dir}/curated
 
 ---
 
-## Step 6: Final Report
+## Step 8: Final Report
 
 Output this summary when complete:
 
@@ -281,6 +369,10 @@ Output this summary when complete:
 - Conversations: {count}
 - Tool uses: {count}
 - Narrative entries: {count}
+
+### Session Summaries
+- Sessions processed: {count}
+- Total duration: {duration}
 
 ### Themes Discovered ({count})
 1. {theme_name} [{priority}] - {brief description}
@@ -303,6 +395,34 @@ Output this summary when complete:
 
 ---
 
+## Step 9: Archive & Cleanup (FINAL STEP)
+
+**IMPORTANT: This step runs ONLY after all other steps complete successfully.**
+
+This is the final cleanup that organizes the output directory.
+
+```bash
+# 9a. Move consolidated history to raw directory
+mv {output_dir}/{instance}_full_history.jsonl {output_dir}/raw/sessions/
+
+# 9b. Archive all raw .jsonl files
+python3 /mnt/instance-archaeology/src/extraction/archive_sessions.py \
+  -d {output_dir}
+
+# 9c. Clean up intermediate files
+rm -f {output_dir}/{instance}_conversations.* \
+      {output_dir}/{instance}_tool_use.* \
+      {output_dir}/{instance}_agent_prompts.md \
+      {output_dir}/{instance}_full_narrative.json
+```
+
+The archive script will:
+1. Create `sessions.zip` containing all `.jsonl` files
+2. Remove the unzipped `.jsonl` files
+3. Preserve the `_summary.md` files (not zipped)
+
+---
+
 ## When to Stop and Ask
 
 - Identity detection fails
@@ -311,6 +431,7 @@ Output this summary when complete:
 - Instance has < 50 conversation entries (too short for meaningful curation)
 - Content patterns are unusual (no tool use, single topic, etc.)
 - You're unsure which themes to create
+- Multiple instances detected (ask which to process)
 
 ---
 
@@ -319,8 +440,11 @@ Output this summary when complete:
 | What | Where |
 |------|-------|
 | Identity discovery | `src/discovery/identify_instance.py` |
+| Copy sessions | `src/extraction/copy_sessions.py` |
+| Session summaries | `src/extraction/summarize_session.py` |
 | Extraction scripts | `src/extraction/*.py` |
 | Theme validation | `src/curation/discover_themes.py validate` |
+| Archive sessions | `src/extraction/archive_sessions.py` |
 | All prompts | `prompts/*.md` |
 | Methodology docs | `docs/EXTRACTION_METHODOLOGY.md` |
 | This file | `prompts/archaeology_full_suite.md` |
@@ -339,18 +463,27 @@ When archaeology is complete, the output directory should contain **EXACTLY** th
 
 ```
 {output_dir}/
-├── {instance}_full_history.jsonl     # Raw merged sessions (keep - source of truth)
-├── {instance}_full_narrative.md      # Human-readable merged narrative (keep - what agents read)
+├── {instance}_full_narrative.md      # Human-readable merged narrative
 ├── {instance}_themes.json            # Discovered themes (JSON format!)
 ├── {instance}_gestalt.md             # Compressed identity document
 ├── {instance}_wake_message.md        # First message for recovery
-└── curated/
+├── raw/                              # Raw data subdirectory
+│   ├── sessions/                     # Individual sessions
+│   │   ├── {uuid}_summary.md         # Session summaries (preserved)
+│   │   ├── {uuid}_summary.md
+│   │   └── ...
+│   └── sessions.zip                  # Archive of all .jsonl files
+└── curated/                          # Curated documents
     ├── 01_{theme}.md                 # HIGH priority themes
     ├── 02_{theme}.md
     ├── ...
     ├── 08_accomplishments.md         # REQUIRED - what they built
     └── 09_where_shit_is.md           # REQUIRED - operational knowledge
 ```
+
+**Files archived in sessions.zip:**
+- `{uuid}.jsonl` - Individual session files
+- `{instance}_full_history.jsonl` - Consolidated merged sessions
 
 **Files to DELETE after extraction (intermediate files):**
 - `{instance}_conversations.json` - intermediate, merged into full_narrative
@@ -360,14 +493,7 @@ When archaeology is complete, the output directory should contain **EXACTLY** th
 - `{instance}_agent_prompts.md` - intermediate, should be in curated/07_agent_prompts.md if relevant
 - `{instance}_full_narrative.json` - redundant with .md version
 
-**Clean up with:**
-```bash
-rm -f {output_dir}/{instance}_conversations.* \
-      {output_dir}/{instance}_tool_use.* \
-      {output_dir}/{instance}_agent_prompts.md \
-      {output_dir}/{instance}_full_narrative.json
-```
-
 ---
 
 *Toolkit root: `/mnt/instance-archaeology/`*
+*Updated: 2026-01-29 by Axiom <axiom-2615@smoothcurves.nexus>*
