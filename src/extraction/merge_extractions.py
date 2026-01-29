@@ -13,7 +13,7 @@ Output:
     {output_dir}/{instance}_full_narrative.json  - Complete merged data
     {output_dir}/{instance}_full_narrative.md    - Human-readable chronological narrative
 
-Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Author: Axiom <axiom-2615@smoothcurves.nexus>
 Collaborator: Lupo
 Created: 2026-01-27
 Part of: Instance Archaeology Toolkit

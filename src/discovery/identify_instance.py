@@ -15,7 +15,7 @@ Enhanced features:
 
 Returns the instance name or "unknown" if not found.
 
-Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Author: Axiom <axiom-2615@smoothcurves.nexus>
 Collaborator: Lupo
 Created: 2026-01-27
 Part of: Instance Archaeology Toolkit

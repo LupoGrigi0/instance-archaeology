@@ -18,7 +18,7 @@ Usage (validation):
 The actual wake message generation should be done by an agent reading the
 prepared prompt, gestalt, and curated documents.
 
-Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Author: Axiom <axiom-2615@smoothcurves.nexus>
 Collaborator: Lupo
 Created: 2026-01-28
 Part of: Instance Archaeology Toolkit

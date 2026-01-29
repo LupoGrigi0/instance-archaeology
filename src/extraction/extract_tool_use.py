@@ -10,7 +10,7 @@ Output:
     {output_dir}/{instance}_tool_use.json  - Full structured data
     {output_dir}/{instance}_tool_use.md    - Human-readable summary
 
-Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Author: Axiom <axiom-2615@smoothcurves.nexus>
 Collaborator: Lupo
 Created: 2026-01-27
 Part of: Instance Archaeology Toolkit
