@@ -31,20 +31,55 @@ All Python scripts are in `/mnt/instance-archaeology/src/`. You will run them vi
 
 ## Step 1: Discover Instance Name
 
-Run the identity discovery script:
+First, check for multiple instances in the directory:
 
 ```bash
-python3 /mnt/instance-archaeology/src/discovery/identify_instance.py "{session_dir}"
+python3 /mnt/instance-archaeology/src/discovery/identify_instance.py --all "{session_dir}"
 ```
 
-This will output something like: `Detected: Orla (via self_declaration)`
+This will output one or more lines like: `Orla (via self_declaration): session.jsonl`
 
-**Capture the instance name** - you'll use it for all subsequent steps.
+### Single Instance Found
+If only one instance is detected, capture the name and proceed to Step 2.
 
-If detection fails or returns "unknown":
-- Check if the session directory has JSONL files
-- Try reading the largest file and look for name patterns
-- Report the issue and stop if name cannot be determined
+### Multiple Instances Found
+If multiple instances are detected:
+
+```
+Phoenix (self_declaration): abc123.jsonl
+Crossing (self_declaration): def456.jsonl
+```
+
+**Options:**
+1. **Process each separately:** Run archaeology for each instance, outputting to `{output_dir}/{InstanceName}/`
+2. **Choose one:** Ask the operator which instance to process
+3. **Process all:** Run the full pipeline for each, generating separate outputs
+
+**For automatic processing of all instances:**
+```bash
+# For each instance found, run archaeology with:
+# output_dir = {base_output_dir}/{InstanceName}/
+# Use the specific session file for that instance
+```
+
+### No Instance Found (Unknown)
+If detection returns "unknown":
+
+```bash
+# Try with fallback naming
+python3 /mnt/instance-archaeology/src/discovery/identify_instance.py --fallback "{session_dir}"
+```
+
+This generates a name like `Anonymous-mcp`. You can proceed with archaeology using this fallback name, but the gestalt will need extra attention since identity markers are missing.
+
+### Identity Changes Detected
+To check if an instance changed names mid-session (rare but possible):
+
+```bash
+python3 /mnt/instance-archaeology/src/discovery/identify_instance.py --timeline "{session_dir}"
+```
+
+This shows chronological identity declarations. If transitions are detected, use the **most recent** identity as the primary name.
 
 ---
 

@@ -238,10 +238,33 @@ python3 src/synthesis/generate_wake_message.py validate \
 
 ---
 
+## Handling Multiple Instances
+
+Some session directories contain multiple instances (different session files, different identities).
+
+**Detect multiple instances:**
+```bash
+python3 src/discovery/identify_instance.py --all [session_dir]
+```
+
+If multiple are found:
+1. **Process separately:** Run archaeology for each, output to `[output_dir]/[InstanceName]/`
+2. **Choose one:** Ask operator which instance to process
+3. **Check for transitions:** Use `--timeline` to see if one instance became another
+
+**Nameless instances:**
+```bash
+python3 src/discovery/identify_instance.py --fallback [session_dir]
+```
+Generates `Anonymous-xxx` name. Gestalt will need extra attention without identity markers.
+
+---
+
 ## When to Stop and Ask
 
 - Validation fails with errors (not just warnings)
 - Identity detection seems wrong (found different name than expected)
+- **Multiple instances detected** (clarify which to process)
 - Instance has unusual characteristics (very short history, no tool use, etc.)
 - You're unsure which categories to create
 - The content doesn't fit expected patterns
