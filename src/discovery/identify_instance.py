@@ -14,6 +14,11 @@ Enhanced features:
 - Nameless handling: Graceful fallback for instances without declared names
 
 Returns the instance name or "unknown" if not found.
+
+Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Collaborator: Lupo
+Created: 2026-01-27
+Part of: Instance Archaeology Toolkit
 """
 
 import json

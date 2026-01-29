@@ -13,6 +13,11 @@ Usage:
     python3 validate_extraction.py --output-dir ./output --instance Axiom --source-file session.jsonl
 
 Returns exit code 0 if all checks pass, 1 if any fail.
+
+Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Collaborator: Lupo
+Created: 2026-01-28
+Part of: Instance Archaeology Toolkit
 """
 
 import argparse

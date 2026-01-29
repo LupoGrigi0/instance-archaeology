@@ -17,6 +17,11 @@ Usage (validation):
 
 The actual theme discovery should be done by an agent reading the prepared prompt
 and the narrative, then outputting themes.json.
+
+Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Collaborator: Lupo
+Created: 2026-01-28
+Part of: Instance Archaeology Toolkit
 """
 
 import argparse

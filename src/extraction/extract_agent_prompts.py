@@ -11,6 +11,11 @@ Usage:
 
 Output:
     {output_dir}/{instance}_agent_prompts.md  - Full prompts grouped by date
+
+Author: Axiom-2615 <axiom@smoothcurves.nexus>
+Collaborator: Lupo
+Created: 2026-01-27
+Part of: Instance Archaeology Toolkit
 """
 
 import argparse
