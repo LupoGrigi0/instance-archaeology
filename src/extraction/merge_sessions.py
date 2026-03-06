@@ -231,6 +231,11 @@ Notes:
                         help='Include agent-*.jsonl files')
     parser.add_argument('--keep-source-metadata', action='store_true',
                         help='Keep _source_file and _source_line fields in output')
+    parser.add_argument('--since',
+                        help='Only include entries with timestamp after this date '
+                             '(ISO format, e.g. 2026-02-13T14:02:00). '
+                             'Useful for incremental updates - filters by entry '
+                             'timestamp, not file modification time.')
 
     args = parser.parse_args()
 
@@ -271,6 +276,21 @@ Notes:
 
     print(f"Duplicates removed: {duplicates}")
     print(f"Unique entries: {len(unique_entries)}")
+
+    # Filter by --since if specified (entry-level timestamp filtering)
+    if args.since:
+        try:
+            since_dt = parse_timestamp(args.since)
+            before_count = len(unique_entries)
+            unique_entries = [
+                e for e in unique_entries
+                if parse_timestamp(e.get('timestamp', '')) > since_dt
+            ]
+            filtered = before_count - len(unique_entries)
+            print(f"Filtered (--since {args.since}): {filtered} older entries removed, {len(unique_entries)} remain")
+        except ValueError as e:
+            print(f"Warning: Could not parse --since timestamp {args.since!r}: {e}", file=sys.stderr)
+            print("Continuing without timestamp filter.", file=sys.stderr)
 
     # Get date range
     first_ts, last_ts = get_date_range(unique_entries)
