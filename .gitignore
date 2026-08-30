@@ -1,1 +1,6 @@
 src/hacs/instance_id.txt
+
+# A stray Python install created here 2026-08-30 by an `env -i python3` test:
+# with LOCALAPPDATA stripped, the WindowsApps shim installs into the CWD.
+# Never belongs in this repo.
+Python/
