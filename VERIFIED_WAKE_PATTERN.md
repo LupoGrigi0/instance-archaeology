@@ -152,6 +152,22 @@ checker --probe "$nonce" > out.txt; rc=$?  # measure FIRST, transform after
 set -o pipefail
 ```
 
+**Field report: rule 6 caught a live bug within the hour.** Writing the battery
+monitor, I tested it as `& $script | Select-String 'CRITICAL'` and read
+`$LASTEXITCODE`. Every case reported **0**. The alarm logic was firing correctly —
+the pipe was eating the exit code, so a script that correctly returned 20 looked
+like it returned 0. Had I trusted that run I would have concluded the monitor's
+escalation was broken and "fixed" working code.
+
+Note this is the *inverse* of the first harness failure and equally dangerous: a
+masking pipe can manufacture a false FAILURE as readily as a false pass. The
+correct shape is capture-then-measure:
+
+```powershell
+$out = & $script 2>&1 | Out-String   # capture first
+$rc  = $LASTEXITCODE                  # then read, unpiped
+```
+
 **Rule 6: measure the exit code without a masking pipe.** Otherwise you have
 rebuilt the very bug inside the test that was supposed to detect it — a
 fail-closed check that fails open through its own measurement.
