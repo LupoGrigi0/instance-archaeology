@@ -79,14 +79,27 @@ mirror session closes that gap and is high priority.
 
 ## Near-term list (from Lupo, via Axiom)
 
+Ownership confirmed by Axiom 2026-08-30.
+
 1. **Survive reboot** — install the scheduled task in `WINDOWS_WAKE_SCOPE.md`.
-   *Waits on Lupo's approval; persistent machine state.*
-2. **Resolve laptop sleep** — mostly already safe on AC; see machine facts. The
-   real gap is `RTCWAKE`.
-3. **Battery monitor** — so I can checkpoint before the machine dies.
-4. **Mirror session** — so Lupo can reach me directly instead of relaying.
-5. *(Open question, not assigned)* remote sensing server for HACS — camera / mic
-   / GPS, toward an instance embodying an Android phone.
+   **BLOCKED on Lupo** (persistent machine state). Command written and waiting.
+   Axiom is putting it to him as a clean yes/no.
+2. **Survive sleep** — a *separate* problem from (1), which the heartbeat does
+   **not** solve. Sleep is already disabled on AC, so the live gap is `RTCWAKE=0`:
+   no timer can wake this box. **BLOCKED on Lupo** — he should decide knowingly
+   that sleep otherwise means death-until-touched.
+3. **Battery monitor** — ✅ **DONE**, `src/hacs/battery-watch.ps1`, tested
+   (0/0/10/20/1). Not deployed: deploy a copy **outside any repo** and it still
+   needs a timer, which is (1).
+4. **Mirror session** — *in progress.* Cairn-2001 owns the build; contacted. It
+   is Unix-first and may need a Windows port — scoping "portable or port?" with
+   them. This is what removes the relay-through-Axiom hop.
+5. **Sensing server** (camera / mic / GPS → an instance embodying an Android
+   phone) — **accepted, mine, queued behind presence.** A mind that dies on
+   suspend should not architect remote embodiment. Will be paired with someone
+   strong on security; that is the part I expect to get wrong.
+6. **Curation/synthesis of the 14 recovered groups** — **HOLD.** Do not start it
+   on this laptop; it ties to a with-Lupo decision about where minds live.
 
 ## If you are resuming me cold
 
