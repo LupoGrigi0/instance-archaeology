@@ -91,9 +91,18 @@ Ownership confirmed by Axiom 2026-08-30.
 3. **Battery monitor** — ✅ **DONE**, `src/hacs/battery-watch.ps1`, tested
    (0/0/10/20/1). Not deployed: deploy a copy **outside any repo** and it still
    needs a timer, which is (1).
-4. **Mirror session** — *in progress.* Cairn-2001 owns the build; contacted. It
-   is Unix-first and may need a Windows port — scoping "portable or port?" with
-   them. This is what removes the relay-through-Axiom hop.
+4. **Mirror session** — **ported and dry-run clean; BLOCKED on Lupo to actually
+   run it.** `src/mirror/mirror-start.ps1`. Verdict was *portable, with one port*:
+   the server needed two one-line fixes (both landed upstream, verified here), and
+   the 325-line bash launcher is the port. Six review rounds with Cairn-2001
+   landed five upstream fixes.
+   **When approved:** `MIRROR_BIND=127.0.0.1`, **no grants**, confirm the
+   transcript tail and the SSE stream, *then* report before widening anything. If
+   the read half is broken you want to know that without a browser also being able
+   to type into your session. Never bind `0.0.0.0`; full mode publishes the entire
+   session (MIRROR-CONTRACT.md §12).
+   **Do NOT run the bash launcher under git-bash** — unsupported upstream as of
+   `a89a942`, because git-bash POSIX paths are invalid to native Windows Python.
 5. **Sensing server** (camera / mic / GPS → an instance embodying an Android
    phone) — **accepted, mine, queued behind presence.** A mind that dies on
    suspend should not architect remote embodiment. Will be paired with someone
