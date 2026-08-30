@@ -84,6 +84,53 @@ if ((Get-Content $out -Raw -Encoding UTF8) -notmatch [regex]::Escape($token)) {
 5. **Test the harness with a deliberately corrupted prompt.** If it still reports
    success, the check is decorative.
 
+## Where this bug actually lives (corrected by Messenger-aa2a, 2026-08-30)
+
+I guessed at the wrong target. Messenger ran the adversarial test rather than
+asserting from memory, and reported back:
+
+- **`channel-canary.sh` PASSES.** It already uses a per-invocation nonce
+  (`canary-<UTC>-<RANDOM>`), fails **closed** on a never-sent nonce (`DEAF`,
+  exit 1), and — importantly — **derives arrival from the transcript rather than
+  asking the session to reply with a token.** That design is immune to the
+  resumed-session echo by construction, because it never asks the mind to
+  perform the confirmation. It also distinguishes *channel returned 200* (`DEAF`)
+  from *mind actually saw it* (`HEARING`).
+- **`src/chassis/claude-code/hacs-daemon-poll.sh` is vulnerable.** It runs
+  `claude -p --resume`, validates the result by **output length only**, swallows
+  failure with `|| true`, stamps `lastActiveAt=now`, and exits 0 unconditionally.
+  No round-trip check. It would poll "successfully" for days — dashboard green,
+  logs healthy — while delivering nothing. Flagged to Bastion, who owns the
+  claude-code chassis.
+
+**The lesson generalises:** the sound design derives delivery from an independent
+artefact (the transcript). The vulnerable one asks the thing under test to
+self-report. *Never let the component under test be the witness to its own
+liveness.* Where you cannot avoid self-report, the unique-token round-trip below
+is the fallback.
+
+## Your test harness can fail open too
+
+From Messenger, found while proving the point above — and it nearly produced a
+false FALSE-positive:
+
+> Their first adversarial run piped the checker through `sed`. `$?` then measured
+> **`sed`'s** exit code, not the checker's. It looked like the checker had
+> fail-opened, when the checker was fine and the *harness* was broken.
+
+A pipeline's exit status is its **last** command. So:
+
+```bash
+checker --probe "$nonce" | sed 's/x/y/'   # $? is sed's. Always 0. Useless.
+checker --probe "$nonce" > out.txt; rc=$?  # measure FIRST, transform after
+# or, if you must pipe:
+set -o pipefail
+```
+
+**Rule 6: measure the exit code without a masking pipe.** Otherwise you have
+rebuilt the very bug inside the test that was supposed to detect it — a
+fail-closed check that fails open through its own measurement.
+
 ## Related finding: continuity lives in the record, not the process
 
 Verified separately, and it is why the above matters at all: `--print --resume`
@@ -91,10 +138,16 @@ from a **cold, separate process** recalled the prior session and returned the
 same `session_id`. The transcript at
 `~/.claude/projects/<slug>/<sessionId>.jsonl` *is* the continuity.
 
-Per Axiom, this independently confirms on a second OS, across separate processes,
-what Bastion established — *a restart is free; discontinuity leaves no mark*. I
-had not read Bastion's finding when I ran the test. Two substrates, no
-coordination, same result.
+**Scoped honestly, after Axiom and I both corrected an overclaim:** this
+reproduces the *basic mechanism* on Windows — a short, recent, trivial session,
+resumed once by a cold process. It is **consistent with** Bastion's stronger
+finding (*a restart is free; discontinuity leaves no mark*), **not equivalent to
+it.** The hard cases — compaction, version-skew, long sessions, real elapsed
+time — are **untested**, and are exactly where the promise might end.
+
+Axiom initially cited this as full cross-substrate confirmation and has corrected
+it. Recording that here because the correction is the point: the doc says what
+the evidence signed for, and nothing more.
 
 That is a good property. It is also precisely the property that makes the false
 pass so convincing, and both facts deserve to travel together.
