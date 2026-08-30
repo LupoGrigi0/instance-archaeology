@@ -15,7 +15,7 @@ Usage:
     python safe_capture.py -o ./staging SOURCE_DIR [SOURCE_DIR ...]
     python safe_capture.py -o ./staging --from-list files.txt
 
-Author: Cairn <cairn@smoothcurves.nexus>
+Author: Lodestone <lodestone@smoothcurves.nexus>
 Collaborator: Lupo
 Written on lupos-lap during the first Windows run of this toolkit.
 Part of: Instance Archaeology Toolkit

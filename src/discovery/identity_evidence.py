@@ -15,7 +15,7 @@ Usage:
     python identity_evidence.py -m staging/capture_manifest.json
     python identity_evidence.py -d some/dir --json report.json
 
-Author: Cairn <cairn@smoothcurves.nexus>
+Author: Lodestone <lodestone@smoothcurves.nexus>
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """

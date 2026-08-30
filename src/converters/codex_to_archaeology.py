@@ -22,7 +22,7 @@ Usage:
     python codex_to_archaeology.py -i rollout-*.jsonl -o converted.jsonl
     python codex_to_archaeology.py -d /path/to/sessions/ -o /path/to/out/
 
-Author: Cairn <cairn@smoothcurves.nexus>
+Author: Lodestone <lodestone@smoothcurves.nexus>
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """
