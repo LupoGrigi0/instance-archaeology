@@ -1,0 +1,41 @@
+diff --git a/bin/mirror-start.sh b/bin/mirror-start.sh
+index 5e84f66..ae89e64 100755
+--- a/bin/mirror-start.sh
++++ b/bin/mirror-start.sh
+@@ -105,9 +105,34 @@ if [[ $PERMS_ONLY -eq 0 ]]; then
+   # "D--Lupo-source-AI-x", byte-identical to the slug Claude Code itself writes
+   # there. It looks POSIX-flavoured and is already correct on both platforms;
+   # "fixing" it would break Windows.
++  # DO NOT add a platform branch to this sed. It is already correct everywhere:
++  # on Windows both "D:\a\b" and "D:/a/b" collapse to "D--a-b", which is
++  # byte-identical to the slug Claude Code itself writes there. Verified on
++  # lupos-lap against a real project dir (Lodestone-8ec9). A future reader seeing
++  # POSIX-looking sed will want to "fix" this; fixing it is what breaks it.
+   SLUG=$(echo "$INSTANCE_DIR" | sed 's/[^a-zA-Z0-9]/-/g')
+-  PROJ="$INSTANCE_DIR/.claude/projects/$SLUG"
+-  [[ -d "$PROJ" ]] || die "no project dir at $PROJ"
++
++  # Two layouts, tried in order of authority.
++  #
++  #   1. Beside the instance. True for every CHASSIS instance, where the instance
++  #      dir IS the session cwd. This is the case we have always had, so the
++  #      assumption has never been tested -- only satisfied.
++  #   2. Under the user profile. The ordinary developer-box layout, where an
++  #      instance runs in a project directory but Claude Code keeps transcripts
++  #      in the user's home. Found by Lodestone-8ec9 on Windows, but NOT a
++  #      Windows issue: it would bite a non-chassis instance on Linux identically.
++  #
++  # $HOME is deliberate here even though INSTANCE_DIR is used above: this is the
++  # location Claude Code chose, not the location the instance lives in.
++  PROJ=""
++  for candidate in "$INSTANCE_DIR/.claude/projects/$SLUG" "$HOME/.claude/projects/$SLUG"; do
++    [[ -d "$candidate" ]] && { PROJ="$candidate"; break; }
++  done
++  # Name every candidate on failure. "no project dir at <one path>" sends you to
++  # verify a path that was never going to be right on your layout.
++  [[ -n "$PROJ" ]] || die "no project dir found. Tried:
++  $INSTANCE_DIR/.claude/projects/$SLUG
++  $HOME/.claude/projects/$SLUG"
+ 
+   # ---- which transcript? A TRUST LADDER, not a guess ---------------------------
+   #
