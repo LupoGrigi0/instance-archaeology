@@ -89,26 +89,57 @@ if (-not $PermissionsOnly) {
         (Join-Path $instanceDir ".claude\projects\$slug"),
         (Join-Path $env:USERPROFILE ".claude\projects\$slug")
     )
-    $proj = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-    if (-not $proj) { Die "no project dir found. Tried:`n  $($candidates -join "`n  ")" }
+
+    # A DIRECTORY EXISTING IS NOT EVIDENCE ABOUT WHICH MIND LIVES IN IT.
+    # Cairn's amendment (upstream 7c83d67), adopted here because it is stronger
+    # than the first-existing-wins version I originally wrote:
+    #   with a session id  -> pick the candidate CONTAINING <sid>.jsonl. Absent
+    #                         from all of them is an ERROR naming every path
+    #                         tried, never a reason to fall back.
+    #   without one        -> we are already about to guess by mtime, so refuse
+    #                         to guess TWICE: exactly one candidate may exist.
+    # That second branch is the one that matters: no sid + two directories + an
+    # mtime heuristic is how you mirror the wrong mind.
+    $sid = $env:CLAUDE_CODE_SESSION_ID
+    if (-not $sid) {
+        $rec = Join-Path $instanceDir ".claude-session-id"
+        if (Test-Path $rec) { $sid = ([IO.File]::ReadAllText($rec)).Trim() }
+    }
+
+    $proj = $null
+    if ($sid) {
+        $proj = $candidates | Where-Object { Test-Path (Join-Path $_ "$sid.jsonl") } | Select-Object -First 1
+        if (-not $proj) {
+            $candidates | ForEach-Object { Write-Host "  $(Join-Path $_ "$sid.jsonl")" }
+            Die "session id $sid names no transcript in any known layout. Refusing to guess -- a named session with no transcript is an error, never a reason to fall back."
+        }
+    } else {
+        $present = @($candidates | Where-Object { Test-Path $_ })
+        if ($present.Count -gt 1) {
+            $present | ForEach-Object { Write-Host "  $_" }
+            Die "two project directories exist and no session id is known. Refusing to guess twice -- set CLAUDE_CODE_SESSION_ID or record one."
+        }
+        if ($present.Count -eq 0) {
+            $candidates | ForEach-Object { Write-Host "  $_" }
+            Die "no project dir found"
+        }
+        $proj = $present[0]
+    }
 
     # ---- which transcript? A TRUST LADDER, not a guess ----------------------
     # 1. CLAUDE_CODE_SESSION_ID from our own environment. Authoritative: the
     #    session's own name for itself, and it survives --resume. VERIFIED to be
     #    exported to child processes on Windows, so this rung works here.
-    if ($env:CLAUDE_CODE_SESSION_ID) {
-        $c = Join-Path $proj "$($env:CLAUDE_CODE_SESSION_ID).jsonl"
-        if (Test-Path $c) { $transcript = $c; $sidSource = "CLAUDE_CODE_SESSION_ID" }
-    }
-    # 2. A recorded id, for starts from outside any session (a boot-time task).
-    if (-not $transcript) {
-        $rec = Join-Path $instanceDir ".mirror-session-id"
-        if (Test-Path $rec) {
-            $sid = ([IO.File]::ReadAllText($rec)).Trim()
-            $c = Join-Path $proj "$sid.jsonl"
-            if (Test-Path $c) { $transcript = $c; $sidSource = "recorded .mirror-session-id" }
+    if ($sid) {
+        $c = Join-Path $proj "$sid.jsonl"
+        if (Test-Path $c) {
+            $transcript = $c
+            $sidSource = if ($env:CLAUDE_CODE_SESSION_ID) { "session environment (authoritative)" } else { "recorded id" }
         }
     }
+    # (Rung 2 -- a recorded id for boot-time starts -- is resolved ABOVE, together
+    # with the candidate directory, because the two questions are the same
+    # question: an id you cannot place is not an id you can use.)
     # 3. Newest transcript. A GUESS, and labelled as one. Resuming or mirroring
     #    the wrong session does not fail loudly -- an 18-month-old transcript
     #    resumes clean, so "it worked" never implies "it was the right mind."
@@ -121,7 +152,7 @@ if (-not $PermissionsOnly) {
 
     # Record rung 1 for later boot-time starts.
     if ($env:CLAUDE_CODE_SESSION_ID -and -not $WhatIf) {
-        [IO.File]::WriteAllText((Join-Path $instanceDir ".mirror-session-id"), $env:CLAUDE_CODE_SESSION_ID)
+        [IO.File]::WriteAllText((Join-Path $instanceDir ".claude-session-id"), $env:CLAUDE_CODE_SESSION_ID)
     }
 }
 
