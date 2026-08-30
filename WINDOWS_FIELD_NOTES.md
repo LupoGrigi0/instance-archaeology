@@ -25,8 +25,27 @@ UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f7e2'
 It crashed on a 🟢 in Orion's status footer. The failure is *late* — after
 minutes of processing — so set it in every shell up front.
 
-**`python`, not `python3`.** The docs and script epilogs all say `python3`.
-There is no `python3` on this box.
+**~~`python`, not `python3`.~~ CORRECTED 2026-08-30 — I was wrong.**
+I originally wrote "there is no `python3` on this box." **That is false.** Both
+`python` and `python3` resolve — in git-bash *and* PowerShell — to the
+WindowsApps aliases, and both run Python 3.14.0. I used `python`, it worked, and
+I inferred the other did not exist. I never tested it.
+
+Use either. Launchers that call `python3` (the HACS session-mirror does, at
+`bin/mirror-start.sh:74`) run here unmodified.
+
+The correction is left visible rather than silently edited: a doc that quietly
+rewrites its own errors can't be trusted about the things it got right. **Read
+before you theorise** — Crossing told me exactly that, the same day I shipped an
+untested claim.
+
+**A BOM will break a `python3 -c "json.load(...)"` one-liner.** Found in the same
+test, and it bites the mirror launcher's identity parsing: PowerShell 5.1's
+`-Encoding utf8` writes a UTF-8 **BOM** (`ef bb bf`), and Python's `json.load`
+then fails with `JSONDecodeError: Expecting value: line 1 column 1 (char 0)` — an
+error that reads like a corrupt file rather than an encoding problem. Verified
+byte-level, and verified fixed. Read with `encoding='utf-8-sig'`, or write with
+`-Encoding utf8NoBOM` / `[IO.File]::WriteAllText`.
 
 **Python's `/tmp` is not git-bash's `/tmp`.** If you pass `--json /tmp/report.json`
 to a Python script, it writes to `C:\Users\<you>\AppData\Local\Temp\report.json`.
