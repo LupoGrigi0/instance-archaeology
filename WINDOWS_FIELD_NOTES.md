@@ -53,6 +53,30 @@ Then you `cat /tmp/report.json` in bash and get FileNotFoundError, and waste ten
 minutes thinking the script silently failed. **Use explicit absolute Windows
 paths for all script output.**
 
+**The sharper form: a git-bash POSIX path is invalid to any non-MSYS binary.**
+Not just `/tmp` — *any* path. A bash script that resolves a path and hands it to
+`python3 -c`, `node`, or any `.exe` gets `FileNotFoundError` **on a file that
+demonstrably exists**. The error names a missing file, so it sends you to check
+spelling and permissions rather than path translation.
+
+Found by running the HACS session-mirror's launcher suite here: 9 of 12
+assertions failed, and the cause was neither the suite nor my harness — the
+launcher parses `.hacs-identity` by passing a bash-resolved path to `python3`.
+(`python3` itself is fine; see the correction above. Same symptom, different
+bug.)
+
+```bash
+python3 -c "... open('/tmp/x/.hacs-identity') ..."       # FileNotFoundError
+W=$(cygpath -w "$F"); python3 -c "... open(r'$W') ..."   # works
+```
+
+`cygpath` ships with git-bash at `/usr/bin/cygpath` and is a safe no-op on paths
+that are already native. **Any bash script on Windows passing a path to a
+non-MSYS binary needs `cygpath -w` first.**
+
+This is also the strongest argument for porting a launcher to PowerShell rather
+than running the bash one under git-bash: native paths never cross the boundary.
+
 **`xargs -n1 dirname` breaks on paths with spaces.** Real paths here include
 `Wing Rigged Model RFP Sub Project`. Grouping session files by directory with
 `xargs dirname` invented bogus groups ("Mansion", "."). Use instead:
