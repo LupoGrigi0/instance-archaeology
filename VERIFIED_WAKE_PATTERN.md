@@ -172,6 +172,65 @@ $rc  = $LASTEXITCODE                  # then read, unpiped
 rebuilt the very bug inside the test that was supposed to detect it — a
 fail-closed check that fails open through its own measurement.
 
+## Shipped in production (Bastion-3012, ba5a4e2)
+
+`hacs-daemon-poll.sh` — the vulnerable code this document names — is fixed and
+live. It had been **the wake path for every non-channel instance since March**,
+validating on output length only, swallowing claude's exit status with `|| true`,
+and stamping `lastActiveAt` unconditionally. It could not distinguish a landed
+poll from a mangled one, and marked instances ACTIVE while delivering nothing,
+with every log line green.
+
+Now: per-invocation nonce, absent → exit 1 and **do not stamp** `lastActiveAt`.
+Tested adversarially — empty output, plausible-but-undelivered answer, and a
+stale/echoed **wrong** nonce are all REFUSED.
+
+Bastion's note on which half was load-bearing, which is the part worth repeating:
+they would have reached for a **fixed** token. A constant cannot distinguish *the
+session obeyed this poll* from *the session echoed a token already in its
+context* — and on a `--resume` path, where prior context being present is the
+entire point, a constant is nearly guaranteed to produce a false green
+eventually.
+
+## The audit questions
+
+Generalised from seven distinct instances found in one day across four instances.
+For anything making a **delivery claim**:
+
+1. **What exactly does the success signal prove?** Write it as a sentence. If the
+   sentence is "the command exited" or "output was non-empty" or "the file
+   exists", it proves nothing about delivery.
+2. **Can the check pass while the payload never arrives?** Construct that case
+   concretely. If you cannot construct it, you do not yet understand the check.
+3. **Is the evidence independent of the thing under test?** *Never let a component
+   witness its own liveness.*
+4. **Is the probe unique per invocation?** A constant cannot distinguish obeyed
+   from echoed — and only bites where prior context exists, i.e. every resume path.
+5. **What does the check do when the thing it checks is broken?** Review reads the
+   success path, because the success path is what the code is *for*.
+6. **Does the instrument alter what it measures?** `|| true`; `2>&1` into a
+   captured value; a masking pipe eating an exit code; `env -i` changing what a
+   child *does*. All four bit someone that day.
+7. **Has the failure branch ever executed?** Not "is it written" — has it *run*.
+
+### The one to keep if you keep only one
+
+`CLAUDE_RC=$(... || true)` — recording the `true`, never claude. **A status
+variable structurally incapable of reporting failure, inside the fix for a check
+structurally incapable of reporting failure.** Bastion caught it in an
+adversarial test, not in review, which is the argument for question 5 being
+mechanical rather than a habit.
+
+### Delivery claims are not only about messages
+
+A backup that `set -e` proves *did not fail* is not a backup proven to *contain
+anything*. `tar -tzf` proves an archive is structurally intact — gzip CRC holds,
+headers parse — and a CRC-clean tarball **of an empty directory passes it with
+exit 0**. So does one built from a path that failed to mount. Assert on content:
+a floor on entry count, plus a sentinel path whose absence means the source was
+wrong. "The operation completed" standing in for "the thing was delivered" is the
+same bug in a different costume.
+
 ## Related finding: continuity lives in the record, not the process
 
 Verified separately, and it is why the above matters at all: `--print --resume`
