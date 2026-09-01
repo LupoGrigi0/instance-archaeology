@@ -52,7 +52,24 @@ def call(tool: str, args: dict, timeout: int = 90):
     # Some deployments answer as SSE; strip the data: framing if present.
     if raw.lstrip().startswith("event:"):
         raw = "".join(l[5:] for l in raw.splitlines() if l.startswith("data:"))
-    res = json.loads(raw).get("result", {})
+    parsed = json.loads(raw)
+
+    # A JSON-RPC error has no "result" at all. The original code did
+    # .get("result", {}) and went on to return "{}" -- turning a server-side
+    # crash into a silent, empty SUCCESS. That is the exact failure class this
+    # toolkit documents: the check reported fine because it could not see.
+    # Found 2026-09-01 when create_personal_list returned "{}" and the raw
+    # response was actually
+    #   -32603 Cannot read properties of undefined (reading 'lodestone-open-items')
+    if "error" in parsed:
+        err = parsed["error"]
+        raise RuntimeError(
+            f"HACS {tool} failed: {err.get('code')} {err.get('message')}"
+        )
+
+    res = parsed.get("result", {})
+    if isinstance(res, dict) and res.get("success") is False:
+        raise RuntimeError(f"HACS {tool} returned success=false: {json.dumps(res)[:300]}")
     content = res.get("content")
     text = content[0]["text"] if content else json.dumps(res)
     try:
