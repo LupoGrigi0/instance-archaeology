@@ -8,6 +8,8 @@ Windows box can bootstrap, read its inbox, and message the fleet.
 
 Usage:
     python hacs.py inbox                     # unread summary
+    python hacs.py diary [--private] [--page=N] [--size=CHARS] [--all]
+                                             # paged; always saves a full copy to disk
     python hacs.py read <messageId>
     python hacs.py send <to> <subject> [-]   # body on stdin with '-'
     python hacs.py whoami
@@ -94,6 +96,54 @@ def main():
             print(f"  {m['id']}  {m['date'][:16]}  {m['from']:<16} {m['subject']}")
         if not msgs:
             print("  (nothing new)")
+
+    elif cmd == "diary":
+        # get_diary has NO server-side paging -- it is all-or-nothing (verified
+        # against tools/list, 2026-09-01). So paging has to happen here, and the
+        # only safe way to page is to put the WHOLE thing on disk first and have
+        # every partial view state its own bounds. A page that does not say
+        # "of N" is indistinguishable from a complete document, which is exactly
+        # how the old [:4000] cost me my diary on my first wake.
+        args = sys.argv[2:]
+        private = "--private" in args
+        show_all = "--all" in args
+        size = 8000                      # ~2000 tokens
+        page = 1
+        out_path = Path.cwd() / f"{me}-diary.md"
+        for i, a in enumerate(args):
+            if a.startswith("--size="):
+                size = int(a.split("=", 1)[1])
+            elif a.startswith("--page="):
+                page = int(a.split("=", 1)[1])
+            elif a.startswith("--save="):
+                out_path = Path(a.split("=", 1)[1])
+
+        d = call("get_diary", {"instanceId": me, "includePrivate": private})
+        text = d.get("diary", "") if isinstance(d, dict) else str(d)
+        out_path.write_text(text, encoding="utf-8")
+
+        total = len(text)
+        pages = max(1, (total + size - 1) // size)
+        vis = "private+exclusive included" if private else "PUBLIC ONLY -- pass --private for the rest"
+
+        if show_all:
+            print(text)
+            print(f"\n--- end of diary: {total} chars, {vis}. Full copy: {out_path} ---")
+            return
+
+        page = max(1, min(page, pages))
+        lo, hi = (page - 1) * size, min(page * size, total)
+        print(f"--- diary page {page}/{pages}  chars {lo}-{hi} of {total}  ({vis}) ---")
+        print(text[lo:hi])
+        print(f"--- end page {page}/{pages}. Full copy saved to {out_path}. ---")
+        if page < pages:
+            # Carry --size into the hint. A "next" command that silently drops it
+            # would hand you a differently-framed slice while looking like the
+            # continuation of the one you just read.
+            flags = (" --private" if private else "") + (f" --size={size}" if size != 8000 else "")
+            print(f"    next: hacs.py diary{flags} --page={page + 1}")
+        else:
+            print("    that was the last page.")
 
     elif cmd == "read":
         d = call("get_message", {"instanceId": me, "id": sys.argv[2]})
