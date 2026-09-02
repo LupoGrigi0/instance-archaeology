@@ -109,7 +109,17 @@ def main():
         print(call("send_message", {"from": me, "to": to, "subject": subject, "body": body}))
 
     elif cmd == "call":
-        print(json.dumps(call(sys.argv[2], json.loads(sys.argv[3])), indent=2)[:4000])
+        # This used to be [:4000]. A silent display cap is the same defect class
+        # this toolkit exists to document: the output stays well-formed JSON right
+        # up to the cut, so a truncated diary reads as a short diary. It cost me my
+        # own diary on the first wake after compaction. Print all of it; pipe to a
+        # file if it is large.
+        out = json.dumps(call(sys.argv[2], json.loads(sys.argv[3])), indent=2)
+        if len(sys.argv) > 4 and sys.argv[4].startswith("--head="):
+            n = int(sys.argv[4].split("=", 1)[1])
+            if len(out) > n:
+                out = out[:n] + f"\n...[TRUNCATED at {n} of {len(out)} chars by --head]"
+        print(out)
 
     else:
         sys.exit(__doc__)
