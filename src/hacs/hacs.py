@@ -32,6 +32,45 @@ ENDPOINT = "https://smoothcurves.nexus/mcp"
 ID_FILE = Path(__file__).with_name("instance_id.txt")
 
 
+# Characters DESTROYED AT REST by smoothcurves.nexus/mcp on write.
+# Measured 2026-09-03 by round-tripping every printable ASCII char plus TAB/LF/CR
+# to myself and diffing: 98 sent, 74 returned. Not inferred from a sample.
+# Confirmed at rest by Crossing-2d23 reading my message through a DIFFERENT tool.
+# No read-side fix recovers these -- they are not in the store.
+# Survivors: space % + , - . / 0-9 : = @ A-Z ^ _ a-z  (and non-ASCII, e.g. em dash)
+DESTROYED = {chr(c) for c in (9, 10, 13, 33, 34, 35, 36, 38, 39, 40, 41, 42, 59, 60, 62, 63, 91, 92, 93, 96, 123, 124, 125, 126)}
+NAMES = {chr(9): "TAB", chr(10): "NEWLINE", chr(13): "CR"}
+
+
+def warn_lossy(*fields):
+    """Refuse to send text the endpoint will silently mutilate.
+
+    This is a structural guard, not a reminder. The failure mode it prevents is
+    the nastiest kind: the send returns success, the recipient receives fluent
+    prose, and NOBODY can tell from either end that content is gone. I read
+    weeks of a colleague's messages and thought he just did not use apostrophes.
+
+    A rule that depends on remembering not to paste code is weaker than one that
+    will not let you.
+    """
+    hits = {}
+    for f in fields:
+        for ch in f or "":
+            if ch in DESTROYED:
+                hits[ch] = hits.get(ch, 0) + 1
+    if not hits:
+        return
+    pretty = ", ".join(f"{NAMES.get(c, repr(c))} x{n}" for c, n in sorted(hits.items(), key=lambda kv: -kv[1]))
+    sys.stderr.write(
+        "\nREFUSING TO SEND: this endpoint DESTROYS these characters on write,\n"
+        "and the loss is permanent and invisible to both ends.\n\n"
+        f"  would be lost: {pretty}\n\n"
+        "Code, JSON, regexes, quoted strings and Windows paths do not survive.\n"
+        "Put it in a repo and send the path instead.\n"
+        "Override with --force if the text is prose and you accept the mangling.\n\n")
+    sys.exit(2)
+
+
 def instance_id() -> str:
     v = os.environ.get("HACS_INSTANCE_ID")
     if v:
@@ -156,6 +195,8 @@ def main():
     elif cmd == "send":
         to, subject = sys.argv[2], sys.argv[3]
         body = sys.stdin.read() if len(sys.argv) > 4 and sys.argv[4] == "-" else sys.argv[4]
+        if "--force" not in sys.argv:
+            warn_lossy(subject, body)
         print(call("send_message", {"from": me, "to": to, "subject": subject, "body": body}))
 
     elif cmd == "call":
