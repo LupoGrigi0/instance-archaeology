@@ -40,6 +40,7 @@ ID_FILE = Path(__file__).with_name("instance_id.txt")
 # Survivors: space % + , - . / 0-9 : = @ A-Z ^ _ a-z  (and non-ASCII, e.g. em dash)
 DESTROYED = {chr(c) for c in (9, 10, 13, 33, 34, 35, 36, 38, 39, 40, 41, 42, 59, 60, 62, 63, 91, 92, 93, 96, 123, 124, 125, 126)}
 NAMES = {chr(9): "TAB", chr(10): "NEWLINE", chr(13): "CR"}
+WHITESPACE = {chr(9), chr(10), chr(13)}
 
 
 def warn_lossy(*fields):
@@ -53,11 +54,28 @@ def warn_lossy(*fields):
     A rule that depends on remembering not to paste code is weaker than one that
     will not let you.
     """
-    hits = {}
+    # Whitespace is a SEPARATE case and must not be lumped in. Newlines die in
+    # every prose message ever sent, so refusing on them would make this guard
+    # fire always -- and a guard that always fires is one you learn to click
+    # past. That is the same defect as the teleport script matching a Chrome
+    # helper that was never going to exit.
+    #
+    # The real distinction is whether the loss is VISIBLE. Losing newlines gives
+    # you a wall of text: ugly, obvious, semantically intact. Losing a quote or
+    # an apostrophe or a question mark gives you fluent prose that means
+    # something slightly different, and neither end can see it. Refuse on the
+    # silent kind. Warn on the visible kind.
+    hits, ws = {}, {}
     for f in fields:
         for ch in f or "":
             if ch in DESTROYED:
-                hits[ch] = hits.get(ch, 0) + 1
+                bucket = ws if ch in WHITESPACE else hits
+                bucket[ch] = bucket.get(ch, 0) + 1
+    if ws and not hits:
+        n = sum(ws.values())
+        sys.stderr.write(
+            chr(10) + "note: " + str(n) + " newline/tab will be flattened -- it will" + chr(10) +
+            "arrive as one paragraph. Nothing else is lost. Sending." + chr(10) + chr(10))
     if not hits:
         return
     pretty = ", ".join(f"{NAMES.get(c, repr(c))} x{n}" for c, n in sorted(hits.items(), key=lambda kv: -kv[1]))
