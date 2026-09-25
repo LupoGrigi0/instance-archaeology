@@ -128,7 +128,11 @@ def call(tool: str, args: dict, timeout: int = 90):
 
     res = parsed.get("result", {})
     if isinstance(res, dict) and res.get("success") is False:
-        raise RuntimeError(f"HACS {tool} returned success=false: {json.dumps(res)[:300]}")
+        # NOT truncated. This used to be [:300], which hid the server's
+        # "available_functions" list -- so a wrong verb name reported as an
+        # unexplained failure. Same defect as the [:4000] in the call verb,
+        # three feet away, with its own comment explaining why not to do this.
+        raise RuntimeError(f"HACS {tool} returned success=false: {json.dumps(res)}")
     content = res.get("content")
     text = content[0]["text"] if content else json.dumps(res)
     try:
@@ -166,7 +170,18 @@ def main():
         show_all = "--all" in args
         size = 8000                      # ~2000 tokens
         page = 1
-        out_path = Path.cwd() / f"{me}-diary.md"
+        # NOT Path.cwd(). This file is the COMPLETE PRIVATE DIARY, and cwd is
+        # almost always a git repo -- so the default put an unredacted private
+        # diary one `git add -A` away from being public, in a repo Lupo's sibling
+        # pulls. Found 2026-09-25. Default now lands outside every repo; --out=
+        # still overrides for anyone who wants it somewhere specific.
+        _priv = Path(os.environ.get("HACS_PRIVATE_DIR",
+                                    r"D:\Lupo\hacs-runtime\%s\private" % me))
+        try:
+            _priv.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            _priv = Path.cwd()          # last resort; say so rather than failing
+        out_path = _priv / f"{me}-diary.md"
         for i, a in enumerate(args):
             if a.startswith("--size="):
                 size = int(a.split("=", 1)[1])

@@ -4,3 +4,7 @@ src/hacs/instance_id.txt
 # with LOCALAPPDATA stripped, the WindowsApps shim installs into the CWD.
 # Never belongs in this repo.
 Python/
+
+# compiled python is not source
+__pycache__/
+*.pyc
