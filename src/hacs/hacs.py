@@ -226,11 +226,35 @@ def main():
             print(d)
 
     elif cmd == "send":
-        to, subject = sys.argv[2], sys.argv[3]
-        body = sys.stdin.read() if len(sys.argv) > 4 and sys.argv[4] == "-" else sys.argv[4]
-        if "--force" not in sys.argv:
+        # Flags are parsed OUT before positionals. The first version read argv[2] as
+        # the recipient, so `send --force Messenger-aa2a "subj" -` sent to "--force",
+        # with the recipient as the subject and the subject as the body -- and the
+        # server fuzzy-matched "--force" to the personality Forge and delivered it as
+        # a room message. 2026-09-27. My parsing, the server's guessing, one wrong
+        # delivery to the one mind I most wanted a careful first contact with.
+        force = "--force" in sys.argv
+        pos = [a for a in sys.argv[2:] if not a.startswith("--")]
+        if len(pos) < 3:
+            sys.exit('usage: hacs.py send [--force] <to> "<subject>" <body | ->')
+        to, subject, body_arg = pos[0], pos[1], pos[2]
+        if to.startswith("-"):
+            sys.exit(f"REFUSING: recipient {to!r} looks like a flag, not an instance id")
+        body = sys.stdin.read() if body_arg == "-" else body_arg
+        if not body.strip():
+            sys.exit("REFUSING: empty body")
+        if not force:
             warn_lossy(subject, body)
-        print(call("send_message", {"from": me, "to": to, "subject": subject, "body": body}))
+        r = call("send_message", {"from": me, "to": to, "subject": subject, "body": body})
+        print(r)
+        # THE CONTROL: the server resolves recipients, and it GUESSES. Verify that
+        # what it says it delivered to is who was meant. A success from a server
+        # that delivered to someone else is the worst kind of success.
+        got = str(r.get("delivered_to", "")) if isinstance(r, dict) else ""
+        if to.lower() not in got.lower():
+            print(f"\n*** WARNING: asked to send to {to!r} but the server reports "
+                  f"delivered_to={got!r}. It may have resolved the recipient to "
+                  f"someone else. Check before sending anything more. ***")
+            sys.exit(3)
 
     elif cmd == "call":
         # This used to be [:4000]. A silent display cap is the same defect class
