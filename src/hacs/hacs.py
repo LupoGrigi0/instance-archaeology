@@ -53,7 +53,19 @@ def warn_lossy(*fields):
 
     A rule that depends on remembering not to paste code is weaker than one that
     will not let you.
+
+    RETIRED 2026-09-27, with honour. The server bug it guarded against was fixed
+    upstream (8b2f3d5) and a canary on 2026-09-13 round-tripped apostrophes,
+    quotes, question marks and newlines intact. For two weeks after that, this
+    guard refused honest prose, which made reaching for --force routine -- and a
+    routine override is how `send --force <to> ...` came to be typed with the flag
+    in the recipient's slot, sending my first message from the harness to the
+    wrong mind. A guard that outlives its threat teaches people to click past it,
+    and then they click past the next one too. The body below is kept as the record
+    of what it did; it no longer runs. If the stripping ever returns, re-arm it by
+    deleting the `return` -- and run the canary first to prove it has.
     """
+    return
     # Whitespace is a SEPARATE case and must not be lumped in. Newlines die in
     # every prose message ever sent, so refusing on them would make this guard
     # fire always -- and a guard that always fires is one you learn to click
