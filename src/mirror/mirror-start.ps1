@@ -185,6 +185,10 @@ $allowUpload    = if ($PSBoundParameters.ContainsKey('WithUploads')) { [int][boo
 $env:MIRROR_BIND      = $Bind
 $env:MIRROR_BASE_PATH = if ($env:MIRROR_BASE_PATH) { $env:MIRROR_BASE_PATH } else { "/" + ($instance -split '-')[0] }
 $env:MIRROR_ROOM      = if ($env:MIRROR_ROOM) { $env:MIRROR_ROOM } else { $instance }
+# The server shows "unknown" without this (mirror-server.mjs cfg.instance). The
+# bash launcher sets it; this port forgot to. Found by Lupo, 2026-09-28, flipping tabs.
+$env:MIRROR_INSTANCE  = if ($env:MIRROR_INSTANCE) { $env:MIRROR_INSTANCE } else { $instance }
+$env:MIRROR_DISPLAY   = if ($env:MIRROR_DISPLAY) { $env:MIRROR_DISPLAY } else { ($instance -split '-')[0] }
 if ($Port -gt 0) { $env:MIRROR_PORT = "$Port" }
 
 if ($PermissionsOnly) { $env:MIRROR_MODE = "permissions" }
