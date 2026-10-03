@@ -169,6 +169,13 @@ def main():
             print(f"  {m['id']}  {m['date'][:16]}  {m['from']:<16} {m['subject']}")
         if not msgs:
             print("  (nothing new)")
+        # The server pages 5 at a time on purpose (spam protection) and says so
+        # with more_unread. Listing 5 under "unread: 11" without saying that
+        # read as 6 messages missing -- found after a hub outage, 2026-10-03.
+        total = d.get('total_unread', len(msgs)) if isinstance(d, dict) else len(msgs)
+        if isinstance(d, dict) and (d.get('more_unread') or total > len(msgs)):
+            print(f"  (+{total - len(msgs)} more unread: the server sends {len(msgs)} at a time; "
+                  f"read these, then run inbox again)")
 
     elif cmd == "diary":
         # get_diary has NO server-side paging -- it is all-or-nothing (verified
