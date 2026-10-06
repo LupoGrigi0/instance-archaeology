@@ -155,14 +155,14 @@ pre-existing catacomb, vendored test fixtures, and SillyTavern character chats
 Protocol 10 item 4 is the rule to hold here: **could-not-look is never "nothing
 is there."** Report the scope you actually searched, every time.
 
-`_scan/full_sweep.py` does this, **one drive per invocation**, writing
+`src/discovery/full_sweep.py` does this, **one drive per invocation**, writing
 `sweep_<LETTER>.json` as it finishes each. That is deliberate: a multi-TB walk
 outlives a session, and losing the entire walk because the harness tore down a
 background task is a mistake worth making only once. (It was made twice here —
 once to a syntax error in a heredoc, once to a session restart.)
 
 Then reconcile what you found against the manifests rather than eyeballing it:
-`_scan/analyse_sweep.py` buckets every unaccounted log by purpose
+`src/discovery/reconcile_sweep.py` buckets every unaccounted log by purpose
 (pre-existing archive / `.claude` dir / vendored dependency / test fixture /
 **OTHER — needs eyes**) so real gaps surface instead of drowning in
 `node_modules`.
