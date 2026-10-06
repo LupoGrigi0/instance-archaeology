@@ -96,6 +96,11 @@ except OSError:
     continue
 ```
 
+**MSYS `/tmp` is invisible to Windows Python.** The shell resolves `/tmp` to
+somewhere under `AppData\Local\Temp`, but `open('/tmp/x.json')` in Python
+raises `FileNotFoundError`. If a shell step writes a scratch file that a Python
+step then reads, put it on a real Windows path both agree on — not `/tmp`.
+
 `.jsonl` timestamps are **not always strings** — `history.jsonl` uses integer
 epochs, and `ts[:10]` on an int raises `TypeError`. Coerce first.
 
@@ -196,7 +201,39 @@ Anything other than prefix-growth means an original was rewritten. Stop.
 
 ---
 
-## 8. Repo size
+## 8. Reaching HACS without the MCP tool installed
+
+If `mcp__*` tools are absent, you are not cut off. The coordination API is
+plain JSON-RPC over HTTPS and needs nothing but `curl`:
+
+```bash
+curl -s -X POST https://smoothcurves.nexus/mcp   -H "Content-Type: application/json" -H "Accept: application/json"   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+       "params":{"name":"<tool>","arguments":{...}}}'
+```
+
+`tools/list` returns 116 tools. The spec is at `/mcp/openapi.json` (terse) and
+`/mcp/openapi_verbose.json`. Needs network — on GreyWolf this meant Tailscale
+being up, so an early failure here may just be connectivity.
+
+Order matters when joining:
+
+1. **`have_i_bootstrapped_before`** with your name and hostname. The API
+   recommends this and it is not optional politeness — in a system where the
+   name *is* the delivery address, a duplicate identity is a mess to unpick.
+2. **`bootstrap`** with `{name, homeSystem}`. Role and personality are
+   optional; a name is not. Returns your `instanceId` (e.g. `Lantern-4224`)
+   and the collaboration protocols.
+3. **`register_context`** with working directory and hostname.
+4. **`send_message`** with `{from, to, subject, body}` — `from` and `to` are
+   *instanceIds*. `get_all_instances` resolves a name to one.
+
+An `inactive` recipient is fine; the message waits in their inbox. Build the
+request body in Python rather than inlining a long message into a shell
+string — see §2 for why shell quoting will betray you.
+
+---
+
+## 9. Repo size
 
 The catacomb `.git` was already 236 MB before this run, with 93 MB `.jsonl`
 files tracked in plain git. `git-lfs` 3.3.0 is installed but **not configured**.
