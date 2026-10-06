@@ -2,3 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 
+
+# Derived scan output - regenerable from the archive, not worth versioning.
+# resolve_ownership.py and scan_tree.py rewrite these on every run.
+_scan/
+
+# Machine-local Claude Code settings.
+.claude/settings.local.json
