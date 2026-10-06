@@ -118,10 +118,54 @@ concluding anything is missing.** On GreyWolf:
   Always check the live directory. Ask before touching it, then archive it.
 - `C:\Users\Lupo\.claude` does not exist. Different profile name than expected.
 
-No Codex / Crush / OpenCode / Gemini / Aider logs on this machine. If you find
-any elsewhere they need `src/converters/codex_to_archaeology.py` first — the
-symptom of skipping it is a silent `Total: 0`, which looks like "empty" but
+**Codex logs DO exist here: `C:\Users\LupoG\.codex\sessions\` — 11 rollout
+logs, Sept 2025.** I originally reported "none", and the way I got that wrong is
+the most useful thing in this document. My check was:
+
+```bash
+for p in "C:/Users/LupoG/.codex" "C:/Users/LupoG/.crush"; do
+  if [ -d "$p" ]; then echo "FOUND $p"; fi
+done        # printed nothing. There was no error. The directory exists.
+```
+
+That is **§2 of this very document** — the silently-empty-variable loop —
+eating my own verification and handing back a confident false negative. I had
+written the warning and then walked into it. **Treat any negative result from a
+shell loop as unproven until you have re-checked it in Python.**
+
+Converted Codex logs need `src/converters/codex_to_archaeology.py`, which is
+**not in this repo** (it is the laptop sibling's work, still to be merged). The
+symptom of parsing them raw is a silent `Total: 0` — which reads as "empty" but
 means "untranslated".
+
+---
+
+## 4b. Sweep the whole machine, not the paths you were given
+
+**"I looked and found nothing" is only as strong as where you looked.**
+
+My first Phoenix search covered filenames under two trees and content inside
+only the logs already archived, and I reported the negative result as fact. A
+proper sweep of all five fixed drives (3.85 M files, 577 k directories, about
+10 minutes total) found **647 `.jsonl` where I had archived 190**, and **3,200
+identity documents where I had archived 433**. Most of the excess is the
+pre-existing catacomb, vendored test fixtures, and SillyTavern character chats
+— but it also contained real misses, including a whole agent runtime's logs.
+
+Protocol 10 item 4 is the rule to hold here: **could-not-look is never "nothing
+is there."** Report the scope you actually searched, every time.
+
+`_scan/full_sweep.py` does this, **one drive per invocation**, writing
+`sweep_<LETTER>.json` as it finishes each. That is deliberate: a multi-TB walk
+outlives a session, and losing the entire walk because the harness tore down a
+background task is a mistake worth making only once. (It was made twice here —
+once to a syntax error in a heredoc, once to a session restart.)
+
+Then reconcile what you found against the manifests rather than eyeballing it:
+`_scan/analyse_sweep.py` buckets every unaccounted log by purpose
+(pre-existing archive / `.claude` dir / vendored dependency / test fixture /
+**OTHER — needs eyes**) so real gaps surface instead of drowning in
+`node_modules`.
 
 ---
 
@@ -198,6 +242,19 @@ assert hashlib.sha256(head).hexdigest() == recorded_sha  # append-only: fine
 ```
 
 Anything other than prefix-growth means an original was rewritten. Stop.
+
+**Separate "the original vanished" from "the archive is damaged."** Five weeks
+after this run, re-verification found **nine source files gone from the live
+tree** — including `instances/phoenix-foundation/inbox.json`, plus Zara's and
+Nova's mailboxes. No crash and no bad command caused it; they simply went in
+five ordinary weeks. All nine verified against their recorded hashes, so the
+archive is now their only copy.
+
+The first version of `verify_archive.py` reported that with the same
+`RESULT: FAILURE` and exit code as genuine corruption. That is a bad design:
+conflating "the archive did exactly its job" with "the archive is broken"
+teaches whoever reads the output to stop believing the verdict. It now reports
+them separately, and only archive damage or a rewritten source fails the run.
 
 ---
 

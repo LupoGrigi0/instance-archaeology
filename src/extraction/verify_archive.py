@@ -72,8 +72,9 @@ def main():
     if not manifests:
         raise SystemExit(f'No MANIFEST*.json found under {args.archive_root}')
 
-    counts = dict(ok=0, live=0, missing_src=0, changed_src=0,
+    counts = dict(ok=0, live=0, missing_src=0, rescued=0, changed_src=0,
                   missing_dest=0, bad_dest=0)
+    rescued_list = []
 
     for mf in manifests:
         data = json.loads(mf.read_text(encoding='utf-8'))
@@ -81,8 +82,18 @@ def main():
             src, dest = Path(f['source']), Path(f['dest'])
 
             if not src.exists():
-                print(f'SOURCE MISSING : {src}')
-                counts['missing_src'] += 1
+                # The original is gone. If our copy is still here and still
+                # hashes correctly, this is not a failure - it is the entire
+                # reason the archive exists, and the archive is now the only
+                # copy. Distinguish it loudly from archive damage, because
+                # conflating the two trains people to ignore the verdict.
+                if dest.exists() and sha256_of(dest)[0] == f['sha256']:
+                    counts['rescued'] += 1
+                    rescued_list.append((f['size'], str(src)))
+                else:
+                    print(f'LOST ENTIRELY  : {src}')
+                    print(f'                 (archive copy also missing or corrupt!)')
+                    counts['missing_src'] += 1
                 continue
 
             if sha256_of(src)[0] != f['sha256']:
@@ -124,6 +135,14 @@ def main():
     print(f'source modified     : {counts["changed_src"]}')
     print(f'archive missing     : {counts["missing_dest"]}')
     print(f'archive corrupt     : {counts["bad_dest"]}')
+    if counts['rescued']:
+        print()
+        print(f'*** ORIGINAL GONE, ARCHIVE IS NOW THE ONLY COPY: '
+              f'{counts["rescued"]} file(s) ***')
+        for sz, path in sorted(rescued_list, reverse=True):
+            print(f'    {sz/1024:>8.1f} KB  {path}')
+        print('    These verified against their recorded hash. The archive did '
+              'its job.')
     print()
     if failed:
         print('RESULT: FAILURE - investigate before trusting this run')
