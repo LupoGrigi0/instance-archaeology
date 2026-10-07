@@ -96,6 +96,19 @@ except OSError:
     continue
 ```
 
+**MSYS rewrites anything that looks like a path — including git revisions.**
+`git show origin/main:.gitignore` fails with *"ambiguous argument
+'origin\main;.gitignore'"*: the path-conversion layer turned the `:` into `;`
+and the `/` into a backslash. It is not a git problem and the error does not
+hint at the cause. Prefix the command:
+
+```bash
+MSYS_NO_PATHCONV=1 git show "origin/main:.gitignore"
+```
+
+Same trap applies to any argument containing a colon — `rev:path`, `host:port`,
+drive letters inside strings.
+
 **MSYS `/tmp` is invisible to Windows Python.** The shell resolves `/tmp` to
 somewhere under `AppData\Local\Temp`, but `open('/tmp/x.json')` in Python
 raises `FileNotFoundError`. If a shell step writes a scratch file that a Python
