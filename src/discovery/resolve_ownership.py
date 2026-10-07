@@ -37,7 +37,7 @@ what separates a real mind from a grammatical accident.
 An instance with no evidence at any tier is NOT a failure and NOT skipped.
 It is recorded as unnamed. An instance that never chose a name still lived.
 
-Author: (Windows archaeology run, GreyWolf)
+Author: Lantern-4224 <Lantern-4224@smoothcurves.nexus> (GreyWolf)
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """

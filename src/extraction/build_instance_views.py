@@ -21,7 +21,7 @@ Three things this deliberately does NOT do:
   * It does not file archaeology sessions under the instance they were
     reading. Those are quarantined into `_archaeology-sessions/`.
 
-Author: (Windows archaeology run, GreyWolf)
+Author: Lantern-4224 <Lantern-4224@smoothcurves.nexus> (GreyWolf)
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """

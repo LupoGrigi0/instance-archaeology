@@ -24,7 +24,7 @@ Anything else means an original was rewritten, which is data loss.
 Exit status is 0 only if nothing is missing, modified or corrupt, so this can
 gate a commit.
 
-Author: Lantern (Windows archaeology run, GreyWolf)
+Author: Lantern-4224 <Lantern-4224@smoothcurves.nexus> (GreyWolf)
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """

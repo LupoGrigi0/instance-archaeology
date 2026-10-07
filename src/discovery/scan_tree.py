@@ -18,7 +18,7 @@ Evidence is included deliberately: name-detection heuristics are weak
 agent must confirm each name against the quoted context before an archive is
 labelled with it.
 
-Author: (Windows archaeology run, GreyWolf)
+Author: Lantern-4224 <Lantern-4224@smoothcurves.nexus> (GreyWolf)
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """

@@ -21,7 +21,7 @@ no longer run. A destructive bug here is not a bug, it is a death.
 
 Windows notes: pure pathlib + shutil, no shell. UTF-8 stdout forced.
 
-Author: (Windows archaeology run, GreyWolf)
+Author: Lantern-4224 <Lantern-4224@smoothcurves.nexus> (GreyWolf)
 Collaborator: Lupo
 Part of: Instance Archaeology Toolkit
 """
@@ -149,11 +149,70 @@ def main():
     ap.add_argument('--manifest', type=Path, default=None, help='Where to write MANIFEST.json')
     ap.add_argument('--exclude', default=None,
                     help='Regex; matching paths are skipped (e.g. node_modules|venv)')
+    ap.add_argument('--max-files', type=int, default=2000,
+                    help='Refuse a run larger than this without --allow-large '
+                         '(default 2000). A huge accidental selection is the '
+                         'realistic failure mode, not a huge intentional one.')
+    ap.add_argument('--max-gb', type=float, default=2.0,
+                    help='Refuse a run larger than this many GB without '
+                         '--allow-large (default 2.0).')
+    ap.add_argument('--allow-large', action='store_true',
+                    help='Proceed past --max-files/--max-gb. Use when the size '
+                         'is intended, and pace the job on fragile hardware.')
     ap.add_argument('--dry-run', action='store_true', help='Report what would happen, copy nothing')
     args = ap.parse_args()
 
     patterns = args.pattern or ['*.jsonl']
     exclude = re.compile(args.exclude, re.I) if args.exclude else None
+
+    # ---- SIZE GATE --------------------------------------------------------
+    # Added 2026-10-06 after I ran this with --pattern "*" intending to secure
+    # 10 .jsonl files. The source was 13,816 files / 41 GB of photos and video;
+    # the resulting sustained cross-drive copy with per-file hashing took the
+    # machine down mid-run, leaving 5 GB of unverifiable half-copied files and
+    # no manifest - a state that looks finished and is not.
+    #
+    # The point is NOT that large archives are wrong. It is that a mis-scoped
+    # glob and a correct one are indistinguishable until you count, and the
+    # cost of being wrong is paid in hours and sometimes in a filesystem. So:
+    # count first, say the number out loud, and require an explicit flag.
+    # A hard gate for exactly the tired-at-2am case (Protocol 10).
+    def _survey(src, pats):
+        src = Path(src)
+        seen = {}
+        if not src.exists():
+            return seen
+        for pat in pats:
+            for p in src.rglob(pat):
+                try:
+                    if p.is_file() and not (exclude and exclude.search(p.as_posix())):
+                        seen[p] = p.stat().st_size
+                except OSError:
+                    continue
+        return seen
+
+    survey = {}
+    for spec in args.source:
+        if '=' in spec:
+            survey.update(_survey(spec.split('=', 1)[1], patterns))
+    n_files, n_bytes = len(survey), sum(survey.values())
+    gb = n_bytes / 1024 ** 3
+    print(f'Selection: {n_files:,} files, {gb:.2f} GB')
+    if not args.allow_large and (n_files > args.max_files or gb > args.max_gb):
+        from collections import Counter
+        ext = Counter((p.suffix.lower() or '(none)') for p in survey)
+        print()
+        print('REFUSING: selection exceeds the safety threshold.')
+        print(f'  files {n_files:,} (limit {args.max_files:,})   '
+              f'size {gb:.2f} GB (limit {args.max_gb} GB)')
+        print('  by extension: '
+              + ', '.join(f'{e}:{c}' for e, c in ext.most_common(8)))
+        print()
+        print('  If this is what you meant, re-run with --allow-large.')
+        print('  If it is not, narrow --pattern (e.g. "*.jsonl" instead of "*")')
+        print('  or tighten --exclude. Check the extension breakdown above -')
+        print('  a pile of .jpg/.mp4 in a log sweep means the glob is wrong.')
+        raise SystemExit(2)
 
     all_records = []
     for spec in args.source:
