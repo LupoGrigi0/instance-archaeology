@@ -11,8 +11,8 @@ live tree:
 
 Read-only.
 """
+import argparse
 import hashlib
-import io
 import sys
 from pathlib import Path
 
@@ -22,9 +22,24 @@ for _s in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-SNAP = Path('C:/Users/LupoG/DotClaudeBackup10-6-26/.claude')
-LIVE = Path('C:/Users/LupoG/.claude')
-ARCH = Path('D:/Lupo/Source/AI/Stasis-Catacomb/GreyWolf-2026-08-30')
+_ap = argparse.ArgumentParser(description=__doc__)
+_ap.add_argument('snapshot', nargs='?',
+                 default='C:/Users/LupoG/DotClaudeBackup10-6-26',
+                 help='Pre-session snapshot dir. Either the snapshot root '
+                      '(a .claude subdir is found automatically) or the '
+                      '.claude dir itself.')
+_ap.add_argument('--live', default='C:/Users/LupoG/.claude')
+_ap.add_argument('--archive',
+                 default='D:/Lupo/Source/AI/Stasis-Catacomb/GreyWolf-2026-08-30')
+_args = _ap.parse_args()
+
+SNAP = Path(_args.snapshot)
+if SNAP.name != '.claude' and (SNAP / '.claude').is_dir():
+    SNAP = SNAP / '.claude'   # accept either the snapshot root or the .claude dir
+LIVE = Path(_args.live)
+ARCH = Path(_args.archive)
+if not SNAP.is_dir():
+    raise SystemExit(f'snapshot not found: {SNAP}')
 
 
 def rel_map(root, pattern='*.jsonl'):
