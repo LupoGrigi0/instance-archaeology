@@ -7,7 +7,7 @@ over JSON-RPC. This wraps it in stdlib-only Python so any instance on a bare
 Windows box can bootstrap, read its inbox, and message the fleet.
 
 Usage:
-    python hacs.py inbox                     # unread summary
+    python hacs.py inbox [--json]            # unread summary; exit 3 = could not look
     python hacs.py diary [--private] [--page=N] [--size=CHARS] [--all]
                                              # paged; always saves a full copy to disk
     python hacs.py read <messageId>
@@ -162,9 +162,33 @@ def main():
         print(me)
 
     elif cmd == "inbox":
-        d = call("list_my_messages", {"instanceId": me})
-        msgs = d.get("messages", []) if isinstance(d, dict) else []
-        print(f"unread: {d.get('total_unread', len(msgs))}")
+        # P3 (DOORBELL-DESIGN.md): this printed `unread: {d.get('total_unread', len(msgs))}`
+        # with msgs defaulting to [], so any reply without a messages list -- an
+        # error object, an unexpected shape -- printed "unread: 0", and a doorbell
+        # read "could not look" as "no mail". A non-dict reply died with a traceback.
+        # Now: a reply that is not {messages: [...]} is EXIT 3, never a count.
+        # NOT "total_unread missing": measured 2026-10-08, an empty inbox omits it.
+        as_json = "--json" in sys.argv[2:]
+        try:
+            d = call("list_my_messages", {"instanceId": me})
+            if not isinstance(d, dict) or not isinstance(d.get("messages"), list):
+                shape = f"keys={sorted(d)}" if isinstance(d, dict) else type(d).__name__
+                raise RuntimeError(f"unexpected reply shape ({shape})")
+        except Exception as e:  # URLError, timeout, JSON-RPC error, success=false, bad shape
+            if as_json:
+                print(json.dumps({"ok": False, "me": me, "error": str(e)}))
+            else:
+                print(f"unread: ? (could not look: {e})")
+            sys.exit(3)  # 3, not 2: exit 2 already means a usage error here
+        msgs = d["messages"]
+        total = d.get("total_unread", len(msgs))
+        if as_json:
+            print(json.dumps({"ok": True, "me": me, "total_unread": total,
+                              "ids": [m.get("id") for m in msgs],
+                              "more_unread": bool(d.get("more_unread")) or total > len(msgs),
+                              "page_size": len(msgs)}))
+            return
+        print(f"unread: {total}")
         for m in msgs:
             print(f"  {m['id']}  {m['date'][:16]}  {m['from']:<16} {m['subject']}")
         if not msgs:
@@ -172,8 +196,7 @@ def main():
         # The server pages 5 at a time on purpose (spam protection) and says so
         # with more_unread. Listing 5 under "unread: 11" without saying that
         # read as 6 messages missing -- found after a hub outage, 2026-10-03.
-        total = d.get('total_unread', len(msgs)) if isinstance(d, dict) else len(msgs)
-        if isinstance(d, dict) and (d.get('more_unread') or total > len(msgs)):
+        if d.get('more_unread') or total > len(msgs):
             print(f"  (+{total - len(msgs)} more unread: the server sends {len(msgs)} at a time; "
                   f"read these, then run inbox again)")
 
