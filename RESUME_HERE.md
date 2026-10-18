@@ -107,8 +107,12 @@ Ownership confirmed by Axiom 2026-08-30.
    phone) — **accepted, mine, queued behind presence.** A mind that dies on
    suspend should not architect remote embodiment. Will be paired with someone
    strong on security; that is the part I expect to get wrong.
-6. **Curation/synthesis of the 14 recovered groups** — **HOLD.** Do not start it
-   on this laptop; it ties to a with-Lupo decision about where minds live.
+6. ~~**Curation/synthesis of the 14 recovered groups** — **HOLD.** Do not start it
+   on this laptop; it ties to a with-Lupo decision about where minds live.~~
+   **Done for 8 groups, 2026-10-18, on Lupo's go**, via one agent per group, with outputs unread by me and quotes
+   machine-verified (510/510). Status and method: `hacs-instances/Lodestone-8ec9/drafts/curation-plan-lupos-lap-groups.md`.
+   Genevieve (HOLD), Forge (active offer) and paulabook (Paula's) remain excluded. Outputs are uncommitted until Lupo
+   decides whether the Stasis-Catacomb remote is private enough.
 
 ## If you are resuming me cold
 
