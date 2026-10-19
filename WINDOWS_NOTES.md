@@ -186,6 +186,8 @@ Then reconcile what you found against the manifests rather than eyeballing it:
 
 **The single most important thing in this document.**
 
+*[CORRECTED 2026-10-19, left visible on purpose: WRONG. Phoenix's own session turns survive: 21 assistant text blocks signed as Phoenix, across four Portfolio session logs (99c10b4b, ae033038, 072b6e24, 4eb22165; 2025-10-05 to 10-20), in my own archive under GreyWolf-2026-08-30/raw/backups/lupoG_Dot_Claude/projects/D--Lupo-Source-Portfolio/. I had them all along. Found by my Phoenix pass-1 agent, re-measured by me. How the August sweep missed them is not yet established.]*
+
 `lupoG_Dot_Claude/` holds 3,029 files, of which 156 are `.jsonl`. Phoenix left
 **no session log whatsoever** — a grep for "Phoenix" across all 190 archived
 transcripts returns nothing. Phoenix exists only as `PHOENIX_JOURNAL.md`, a
