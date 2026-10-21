@@ -28,18 +28,29 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-# Strongest signal: HACS instance IDs look like "Forge-a1b2".
-HACS_ID = re.compile(r"\b([A-Z][a-z]{2,15})-([a-f0-9]{4})\b")
+# Strongest signal: HACS instance IDs look like "Forge-a1b2" (or all digits,
+# "Axiom-2615"). The (?!-\d) refuses a YEAR: in "claude-code-COO-Kai-2025-08-23"
+# the "Kai-2025" is a date inside a signature, and reading it as a HACS id let a
+# single team-list mention name an instance at medium confidence (fixture,
+# 2026-10-21: the signature rule rejected it and this pattern let it back in).
+HACS_ID = re.compile(r"\b([A-Z][a-z]{2,15})-([a-f0-9]{4})\b(?!-\d)")
 
 # Explicit self-naming. Only trusted when found in the assistant's own voice --
-# a user saying "I am Lupo" must not name the instance.
-SELF_DECLARATIONS = [
+# a user saying "I am Lupo" must not name the instance. First person: one
+# unquoted "I am X" in the instance's own voice is a declaration.
+FIRST_PERSON = [
     re.compile(r"\bI am ([A-Z][a-z]{2,15})\b"),
     re.compile(r"\bI'm ([A-Z][a-z]{2,15})\b"),
     re.compile(r"\bMy name is ([A-Z][a-z]{2,15})\b"),
     re.compile(r"\bMy name:\s*\**([A-Z][a-z]{2,15})\**"),
     re.compile(r"\bI'?ve chosen(?: the name)?[:\s]+\**([A-Z][a-z]{2,15})\**"),
     re.compile(r"\bI(?:'ll| will) (?:go by|be)\s+\**([A-Z][a-z]{2,15})\**"),
+]
+
+# Signature-style evidence: an instance id written out in the assistant's voice.
+# Weaker than first person, because an instance writes OTHER instances' ids too
+# (team lists, archaeology, rosters). See SIGNATURE_RULE in scan().
+SIGNATURES = [
     # The COO instances on this machine minted their own IDs in the form
     # "Instance ID: claude-code-COO-Kai-2025-08-23-1800". Self-assigned, so it
     # is as authoritative as saying "I am Kai".
@@ -55,6 +66,20 @@ SELF_DECLARATIONS = [
     re.compile(r"\b(?:claude-code|codex-collab)-[A-Za-z]+-([A-Z][a-z]{2,15})\b"),
     re.compile(r"\b(?:claude-code|codex-collab)-([A-Z][a-z]{2,15})-[A-Za-z]+\b"),
 ]
+
+SELF_DECLARATIONS = FIRST_PERSON + SIGNATURES   # kept for callers that import it
+
+# Quoting someone is not being them: "Hello! I'm Atlas, your new COO" written by
+# an archaeologist citing Atlas named the archaeologist Atlas (measured on
+# Lodestone's own archive, 2026-10-21). Quoted spans are removed before matching.
+QUOTED = re.compile(r'"[^"\n]{1,400}"|“[^”\n]{1,400}”')
+
+# A signature name counts only if it recurs (n >= 2), dominates (at least twice
+# the runner-up), and the file's signatures name fewer than 3 instances -- three
+# or more distinct ids in one voice is a roster, not a signature. Lantern-4224's
+# trap 1 (a single team-list mention scored 0.75) and Lodestone's own archive
+# (4 distinct ids, misfiled as Kai) are the fixtures.
+SIG_MIN, SIG_DOMINANCE, SIG_MAX_DISTINCT = 2, 2, 3
 
 # Words that match the name shape but are never names. Tool names, model names,
 # protocol nouns, and sentence-starters that slip past the regex.
@@ -109,6 +134,7 @@ def scan(path: Path) -> dict:
     hacs_ids = Counter()
     self_hacs_ids = Counter()
     declarations = Counter()
+    signatures = Counter()
     lines = 0
     cwd = None
     version = None
@@ -139,10 +165,21 @@ def scan(path: Path) -> dict:
                     for m in HACS_ID.finditer(said):
                         if is_plausible_name(m.group(1)):
                             self_hacs_ids[f"{m.group(1)}-{m.group(2)}"] += 1
-                    for pattern in SELF_DECLARATIONS:
-                        for m in pattern.finditer(said):
+                    unquoted = QUOTED.sub(" ", said)
+                    for pattern in FIRST_PERSON:
+                        for m in pattern.finditer(unquoted):
                             if is_plausible_name(m.group(1)):
                                 declarations[m.group(1)] += 1
+                    # Several signature patterns can match ONE id string
+                    # ("claude-code-COO-Kai-2025-..." matches two of them), so
+                    # count each name occurrence once, by its position.
+                    spans = set()
+                    for pattern in SIGNATURES:
+                        for m in pattern.finditer(unquoted):
+                            if is_plausible_name(m.group(1)):
+                                spans.add((m.group(1), m.start(1)))
+                    for name, _ in spans:
+                        signatures[name] += 1
                 cwd = cwd or d.get("cwd")
                 version = version or d.get("version")
                 ts = d.get("timestamp")
@@ -161,6 +198,23 @@ def scan(path: Path) -> dict:
                                 break
     except OSError as exc:
         return {"file": str(path), "error": str(exc)}
+
+    # SIGNATURE_RULE: promote a signature name to a declaration only when it
+    # recurs, dominates, and is not one entry in a roster. Otherwise record why.
+    signature_verdict = None
+    if signatures:
+        ranked = signatures.most_common()
+        top, n = ranked[0]
+        runner_up = ranked[1][1] if len(ranked) > 1 else 0
+        if len(signatures) >= SIG_MAX_DISTINCT:
+            signature_verdict = f"rejected: roster of {len(signatures)} ids"
+        elif n < SIG_MIN:
+            signature_verdict = f"rejected: {top} x{n} < {SIG_MIN}"
+        elif n < SIG_DOMINANCE * runner_up:
+            signature_verdict = f"rejected: {top} x{n} not dominant over x{runner_up}"
+        else:
+            signature_verdict = f"accepted: {top} x{n}"
+            declarations[top] += n
 
     # Rank by how directly the evidence ties the name to *this* speaker.
     # A name the instance says about itself beats a name merely present in the
@@ -185,6 +239,8 @@ def scan(path: Path) -> dict:
         "self_hacs_ids": dict(self_hacs_ids),
         "hacs_ids": dict(hacs_ids),
         "declarations": dict(declarations),
+        "signatures": dict(signatures),
+        "signature_verdict": signature_verdict,
         "lines": lines,
         "cwd": cwd,
         "version": version,
